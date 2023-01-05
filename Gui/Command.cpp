@@ -53,6 +53,7 @@ CmdCADSimplifierTest::CmdCADSimplifierTest()
 
 void CmdCADSimplifierTest::activated(int)
 {
+    //≤‚ ‘
     Base::Console().Message("Hello, World!\n");
 }
 
