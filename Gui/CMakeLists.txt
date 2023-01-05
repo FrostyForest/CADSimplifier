@@ -14,12 +14,13 @@ set(CADSimplifierGui_LIBS
     FreeCADGui
 )
 
-if (BUILD_QT5)
-    qt5_add_resources(CADSimplifier_QRC_SRCS Resources/CADSimplifier.qrc)
-else()
-    qt4_add_resources(CADSimplifier_QRC_SRCS Resources/CADSimplifier.qrc)
-endif()
+# if (BUILD_QT5)
+    # qt5_add_resources(CADSimplifier_QRC_SRCS Resources/CADSimplifier.qrc)
+# else()
+    # qt4_add_resources(CADSimplifier_QRC_SRCS Resources/CADSimplifier.qrc)
+# endif()
 
+ qt5_add_resources(CADSimplifier_QRC_SRCS Resources/CADSimplifier.qrc)
 SET(CADSimplifierGui_SRCS
     ${CADSimplifier_QRC_SRCS}
     AppCADSimplifierGui.cpp
