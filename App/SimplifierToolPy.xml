@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenerateModel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="generateMetaModel_Module.xsd">
+  <PythonExport
+      Father="ComplexGeoDataPy"
+      Name="SimplifierToolPy"
+      Twin="SimplifierTool"
+      TwinPointer="SimplifierTool"
+      Include= "Mod/CADSimplifier/App/SimplifierTool.h"
+      Namespace="CADSimplifier"
+      FatherInclude="App/ComplexGeoDataPy.h"
+      FatherNamespace="Data"
+      Constructor="true">
+    <Documentation>
+      <Author Licence="LGPL" Name="Chi Zhou" EMail="mechzhou@scut.edu.cn" />
+      <UserDocu>CADSimplifierWrapper is the Python wrapper for CAD Model Simplier.
+Sub-elements such as vertices, edges or faces are accessible as:
+* Edge#, where # is in range(1, number of edges)
+* Face#, where # is in range(1, number of faces)</UserDocu>
+    </Documentation>
+   <Methode Name="RemoveFillet" Const="true">
+      <Documentation>
+        <UserDocu>Remove Fillet.</UserDocu>
+      </Documentation>
+    </Methode>
+    <Attribute Name="Faces" ReadOnly="true">
+      <Documentation>
+        <UserDocu>List of faces in this shape.</UserDocu>
+      </Documentation>
+      <Parameter Name="Faces" Type="List"/>
+    </Attribute>
+  </PythonExport>
+</GenerateModel>
+
+
+<!--"Mod/CADSimplifier/CADSimplifierGlobal.h"-->

@@ -8,6 +8,7 @@ class CADSimplifierWorkbench (Workbench):
 
     def Initialize(self):
         # load the module
+        import CADSimplifier
         import CADSimplifierGui
 
     def GetClassName(self):

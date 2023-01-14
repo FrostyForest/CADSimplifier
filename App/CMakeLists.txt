@@ -1,20 +1,52 @@
-
 include_directories(
-    ${Boost_INCLUDE_DIRS}
+	${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+	
+	${FREETYPE_INCLUDE_DIRS}	
+	${Boost_INCLUDE_DIRS}
     ${OCC_INCLUDE_DIR}
     ${PYTHON_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
-    ${XercesC_INCLUDE_DIRS}
+    ${XercesC_INCLUDE_DIRS}	
 )
+link_directories(${OCC_LIBRARY_DIR})
 
 set(CADSimplifier_LIBS
-    FreeCADApp
+    ${OCC_LIBRARIES}
+    ${OCC_DEBUG_LIBRARIES}
+    #CADSimplifier
+    Part
+	FreeCADApp
 )
+if(FREETYPE_FOUND)
+    set(CADSimplifier_LIBS
+        ${CADSimplifier_LIBS}
+        ${FREETYPE_LIBRARIES}
+    )
+endif(FREETYPE_FOUND)
 
-SET(CADSimplifier_SRCS
+generate_from_xml(SimplifierToolPy)
+SET(Tmp_SRCS 
+	SimplifierToolPy.xml
+	SimplifierToolPyImp.cpp
+)
+SOURCE_GROUP("Xmltmp" FILES ${Tmp_SRCS})
+
+SET(CADSimplifier_SRCS	
+	${Tmp_SRCS}
     AppCADSimplifier.cpp
     PreCompiled.cpp
     PreCompiled.h
+	
+	BRepAlgoAPI_RemoveFillet.h
+	BRepAlgoAPI_RemoveFillet.cpp
+	BOPAlgo_RemoveFillets.h
+	BOPAlgo_RemoveFillets.cpp		
+    SimplifierTool.cpp
+    SimplifierTool.h  	
 )
 
 add_library(CADSimplifier SHARED ${CADSimplifier_SRCS})

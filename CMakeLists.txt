@@ -5,7 +5,7 @@ if(BUILD_GUI)
 endif(BUILD_GUI)
 
 set(CADSimplifier_Scripts
-    Init.py
+    Init.py	
 )
 
 if(BUILD_GUI)

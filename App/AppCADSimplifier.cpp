@@ -31,21 +31,41 @@
 #include <Base/PyObjectBase.h>
 
 #include <CXX/Extensions.hxx>
+
 #include <CXX/Objects.hxx>
-
-
+//#include <mod/CADSimplifier/App/SimplifierToolPy.h>
+#include "SimplifierToolPy.h"
+//#ifdef FCUseFreeType
+//#include "FT2FC.h"
+//#endif
 namespace CADSimplifier {
-class Module : public Py::ExtensionModule<Module>
+class Module: public Py::ExtensionModule<Module>
 {
 public:
     Module() : Py::ExtensionModule<Module>("CADSimplifier")
     {
         initialize("This module is the CADSimplifier module."); // register with Python
+        add_varargs_method("test", &Module::Test,
+                           "Test(list,string) -- Export a list of objects into a single file.");
     }
 
     virtual ~Module() {}
 
 private:
+    Py::Object Test(const Py::Tuple& args)
+    {
+        PyObject* object;
+        char* Name;
+        if (!PyArg_ParseTuple(args.ptr(), "Oet", &object, "utf-8", &Name))
+            throw Py::Exception();
+
+        std::string EncodedName = std::string(Name);
+        PyMem_Free(Name);
+
+    
+
+        return Py::None();
+    }
 };
 
 PyObject* initModule()
@@ -53,7 +73,7 @@ PyObject* initModule()
     return Base::Interpreter().addModule(new Module);
 }
 
-
+ 
 } // namespace CADSimplifier
 
 
@@ -65,5 +85,11 @@ PyMOD_INIT_FUNC(CADSimplifier)
     //
     PyObject* mod = CADSimplifier::initModule();
     Base::Console().Log("Loading CADSimplifier module... done\n");
+
+    //CADSimplifier::SimplifierToolPy ::Type.tp_name = "Part.Shape";
+    Base::Interpreter().addType(&CADSimplifier::SimplifierToolPy ::Type, mod, "SimplifierTool");
+    //Base::Interpreter().addType(&CADSimplifier::SimplifierToolPy ::Type, mod, "Shape");
+    CADSimplifier::SimplifierTool ::init();
+
     PyMOD_Return(mod);
 }
