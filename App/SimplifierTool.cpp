@@ -78,10 +78,6 @@ TopoDS_Shape SimplifierTool::RemoveFillet(const std::vector<TopoDS_Shape>& s)
         Standard_SStream aSStream;
         rf.DumpWarnings(aSStream);
     }
-#ifdef FC_DEBUG
-    ShapeOfIntersectResult=rf.GetIntersectShape();
-    ShapeOfTrimResult = rf.GetTrimedShape();
-#endif
     return rf.Shape();
 #endif
 }

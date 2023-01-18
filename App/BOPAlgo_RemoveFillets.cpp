@@ -34,9 +34,17 @@
 #include <TopoDS_Compound.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
+#include <Mod/Part/App/PartFeature.h>
 
 #include <TopTools_IndexedDataMapOfShapeShape.hxx>
+#include <App/Application.h>
+#include <App/Document.h>
+#include <App/DocumentObject.h>
 
+
+ #ifdef FC_DEBUG
+    #define CREATE_DEBUG_SHAPE
+#endif
 
 //=======================================================================
 // static methods declaration
@@ -168,6 +176,21 @@ void BOPAlgo_RemoveFillets::Perform(const Message_ProgressRange& theRange)
         }
         // Post treatment
         PostTreat();
+
+ #ifdef CREATE_DEBUG_SHAPE
+        Part::Feature* pInsectFaces =
+            (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
+                                                                            "InsectFaces");
+        pInsectFaces->Shape.setValue(ShapeOfIntersectResult);
+        pInsectFaces->Visibility.setValue(false);
+
+        Part::Feature* pTrimFaces =
+            (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
+                                                                                 "TrimedFaces");
+        pTrimFaces->Shape.setValue(ShapeOfTrimResult);
+        pTrimFaces->Visibility.setValue(false);
+
+#endif
     }
     catch (Standard_Failure const&) {
         AddError(new BOPAlgo_AlertRemoveFeaturesFailed());

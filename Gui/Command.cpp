@@ -181,15 +181,15 @@ void CmdCADSimplifierRemoveFillets::activated(int iMsg)
             Part::Feature* pNewFeat = (Part::Feature*) uiDoc->getDocument()->addObject("Part::Feature", "RemoveFillet");
             pNewFeat->Shape .setValue( nsh);
             feat->Visibility.setValue(false);
-#ifdef FC_DEBUG
-            Part::Feature* pInsectFaces =
-                (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "InsectFaces");
-            pInsectFaces->Shape.setValue(tool.ShapeOfIntersectResult);
-            Part::Feature* pTrimFaces =
-                (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "TrimedFaces");
-            pTrimFaces->Shape.setValue(tool.ShapeOfTrimResult);
-
-#endif
+//#ifdef FC_DEBUG
+//            Part::Feature* pInsectFaces =
+//                (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "InsectFaces");
+//            pInsectFaces->Shape.setValue(tool.ShapeOfIntersectResult);
+//            Part::Feature* pTrimFaces =
+//                (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "TrimedFaces");
+//            pTrimFaces->Shape.setValue(tool.ShapeOfTrimResult);
+//
+//#endif
         }
         catch (const Base::Exception& e) {
             Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
