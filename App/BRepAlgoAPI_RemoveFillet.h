@@ -188,11 +188,7 @@ protected:                                      //! @name Fields
                                                 //! shapes modifications or not (true by default)
     BOPAlgo_RemoveFillets myFeatureRemovalTool;//!< Tool for the features removal
 
-#ifdef FC_DEBUG
-public:
-     TopoDS_Shape GetIntersectShape() const { return myFeatureRemovalTool.ShapeOfIntersectResult; }
-    TopoDS_Shape GetTrimedShape() const { return myFeatureRemovalTool.ShapeOfTrimResult; }
-#endif
+
 };
 
 

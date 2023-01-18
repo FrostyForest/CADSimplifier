@@ -10,7 +10,9 @@
 #include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_MapOfShape.hxx>
-
+ #ifdef FC_DEBUG
+#define CREATE_DEBUG_SHAPE
+#endif
 class BOPAlgo_RemoveFillets: public BOPAlgo_BuilderShape
 {
 public:
@@ -128,8 +130,8 @@ protected://! @name Fields
                                            //! (each feature is a compound of faces)
     TopTools_IndexedMapOfShape myInputsMap;//!< Map of all sub-shapes of the input shape
 
-#ifdef FC_DEBUG
-public:
+#ifdef CREATE_DEBUG_SHAPE
+private:
     TopoDS_Shape ShapeOfIntersectResult;
     TopoDS_Shape ShapeOfTrimResult;
 #endif
