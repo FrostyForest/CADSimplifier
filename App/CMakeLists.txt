@@ -20,6 +20,7 @@ set(CADSimplifier_LIBS
     #CADSimplifier
     Part
 	FreeCADApp
+	FreeCADGui
 )
 if(FREETYPE_FOUND)
     set(CADSimplifier_LIBS

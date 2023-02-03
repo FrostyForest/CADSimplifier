@@ -1,5 +1,6 @@
-<!DOCTYPE RCC><RCC version="1.0">
-    <qresource> 
+<RCC>
+    <qresource prefix="/">
         <file>icons/CADSimplifierWorkbench.svg</file>
+        <file>icons/CADSimplifier_GetNeighborFaces.svg</file>
     </qresource>
-</RCC> 
+</RCC>

@@ -136,3 +136,7 @@ private:
     TopoDS_Shape ShapeOfTrimResult;
 #endif
 };
+
+
+
+

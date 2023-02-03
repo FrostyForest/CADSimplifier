@@ -21,14 +21,22 @@ set(CADSimplifierGui_LIBS
     # qt4_add_resources(CADSimplifier_QRC_SRCS Resources/CADSimplifier.qrc)
 # endif()
 qt_add_resources(CADSimplifier_QRC_SRCS Resources/CADSimplifier.qrc)
+
+set(CADSimplifierGui_UIC_SRCS
+	DlgGetNeighborFaces.ui
+)
 SET(CADSimplifierGui_SRCS
     ${CADSimplifier_QRC_SRCS}
+	${CADSimplifierGui_UIC_SRCS}
     AppCADSimplifierGui.cpp
     Command.cpp
     PreCompiled.cpp
     PreCompiled.h
     Workbench.cpp
     Workbench.h
+	
+	DlgGetNeighborFaces.h
+    DlgGetNeighborFaces.cpp
 )
 set(CADSimplifierGui_Scripts
     ../InitGui.py
@@ -36,6 +44,7 @@ set(CADSimplifierGui_Scripts
 
 SET(CADSimplifierGuiIcon_SVG
     Resources/icons/CADSimplifierWorkbench.svg
+    Resources/icons/CADSimplifier_GetNeighborFaces.svg
 )
 add_library(CADSimplifierGui SHARED ${CADSimplifierGui_SRCS} ${CADSimplifierGui_Scripts} ${CADSimplifierGuiIcon_SVG})
 target_link_libraries(CADSimplifierGui ${CADSimplifierGui_LIBS})
