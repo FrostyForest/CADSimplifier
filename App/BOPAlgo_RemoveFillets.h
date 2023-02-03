@@ -134,5 +134,6 @@ protected://! @name Fields
 private:
     TopoDS_Shape ShapeOfIntersectResult;
     TopoDS_Shape ShapeOfTrimResult;
+    TopoDS_Shape ShapeOfFinalFaces;
 #endif
 };
