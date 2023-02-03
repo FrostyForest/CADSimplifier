@@ -51,8 +51,8 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     root->insertItem( item, test );
     test->setCommand("CADSimplifier");
     *test << "CADSimplifier_Test";
-    *test << "CADSimplifier_RemoveFillets";
-    
+    *test << "CADSimplifier_GetNeighborFaces"; 
+    *test << "CADSimplifier_RemoveFillets";  
     return root;
 }
 
@@ -62,6 +62,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     Gui::ToolBarItem* test = new Gui::ToolBarItem(root);
     test->setCommand( "CADSimplifier Tools" );
     *test << "CADSimplifier_Test"; 
+    *test << "CADSimplifier_GetNeighborFaces"; 
     *test << "CADSimplifier_RemoveFillets";
     return root;
 }
