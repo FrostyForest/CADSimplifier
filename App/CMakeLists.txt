@@ -47,6 +47,8 @@ SET(CADSimplifier_SRCS
 	BOPAlgo_RemoveFillets.cpp		
     SimplifierTool.cpp
     SimplifierTool.h  	
+    Test_MergeFaces.h
+    Test_MergeFaces.cpp
 )
 
 add_library(CADSimplifier SHARED ${CADSimplifier_SRCS})
