@@ -190,6 +190,13 @@ void BOPAlgo_RemoveFillets::Perform(const Message_ProgressRange& theRange)
         pTrimFaces->Shape.setValue(ShapeOfTrimResult);
         pTrimFaces->Visibility.setValue(false);
 
+          Part::Feature* pFinalFaces =
+            (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
+                                                                                 "FinalFaces");
+        pFinalFaces->Shape.setValue(ShapeOfFinalFaces);
+        pFinalFaces->Visibility.setValue(false);
+        
+
 #endif
     }
     catch (Standard_Failure const&) {
@@ -377,6 +384,7 @@ public://! @name Perform the operation 执行部分
                 return;
             }
 
+
             myHasAdjacentFaces = (aMFAdjacent.Extent() > 0);
             if (!myHasAdjacentFaces)
                 return;
@@ -391,7 +399,7 @@ public://! @name Perform the operation 执行部分
             // Trim the extended faces
             TrimExtendedFaces(aFaceExtFaceMap, aPS.Next());
         }
-        catch (Standard_Failure const&) {
+        catch (Standard_Failure const& ) {
             // Make sure the warning will be given on the higher level
             myHasAdjacentFaces = Standard_True;
             myFaces.Clear();
@@ -488,8 +496,8 @@ private://! @name Private methods performing the operation
         Bnd_Box aFeatureBox;
         BRepBndLib::Add(myFeature, aFeatureBox);
 
-//        const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
-         Standard_Real anExtLength = 2;
+        const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
+        //        Standard_Real anExtLength = 2;
 
         const Standard_Integer aNbFA = theMFAdjacent.Extent();
         Message_ProgressScope aPS(theRange, "Extending adjacent faces", aNbFA);
@@ -519,7 +527,6 @@ private://! @name Private methods performing the operation
             aGFInter.AddArgument(theFaceExtFaceMap(i));
 
         aGFInter.SetRunParallel(myRunParallel);
-
         // Intersection result
         TopoDS_Shape anIntResult;
         Message_ProgressScope aPSOuter(theRange, NULL, (aGFInter.Arguments().Extent() > 1) ? 2 : 1);
@@ -535,8 +542,13 @@ private://! @name Private methods performing the operation
         else
             anIntResult = aGFInter.Arguments().First();
 
-#ifdef FC_DEBUG
+#ifdef CREATE_DEBUG_SHAPE
         myIntersectResult = anIntResult;
+        TopoDS_CompSolid compound;
+        BRep_Builder builder;
+        builder.MakeCompound(myTrimResult);
+        builder.MakeCompound(myFinalFaces);
+        
 #endif
         // Prepare the EF map of the extended faces after intersection
         // to select from them only boundary edges
@@ -620,9 +632,7 @@ private://! @name Private methods performing the operation
 
         // Get all splits
         const TopoDS_Shape& aSplits = aGFTrim.Shape();
-#ifdef FC_DEBUG
-        myTrimResult = aSplits;
-#endif
+
         // Filter the trimmed faces and save the valid ones into result map
         TopTools_ListOfShape aLFTrimmed; //有效的二次剪裁后面
 
@@ -630,13 +640,21 @@ private://! @name Private methods performing the operation
         TopExp_Explorer anExpF(aSplits, TopAbs_FACE);
         for (; anExpF.More(); anExpF.Next()) {
             const TopoDS_Shape& aSp = anExpF.Current();//二次剪裁后的面
+            #ifdef CREATE_DEBUG_SHAPE
+                        BRep_Builder().Add(myTrimResult, aSp);
+            #endif
+
             anExpE.Init(aSp, TopAbs_EDGE);//二次剪裁后的面的边
             for (; anExpE.More(); anExpE.Next()) {
                 if (aMExtEdges.Contains(anExpE.Current()))
                     break;
             }
-            if (!anExpE.More())
+            if (!anExpE.More()) {
                 aLFTrimmed.Append(aSp);
+                #ifdef CREATE_DEBUG_SHAPE
+                BRep_Builder().Add(myFinalFaces, aSp);
+                #endif
+            }
         }
 
         //这部分是不是对于删除圆角不需要，应该不存在分为多个，或者拓扑大的变化
@@ -746,7 +764,8 @@ private://! @name Fields
 #ifdef FC_DEBUG
 public:
     TopoDS_Shape myIntersectResult;   
-    TopoDS_Shape myTrimResult;
+    TopoDS_Compound myTrimResult;
+    TopoDS_Compound myFinalFaces;
 #endif
 };
 
@@ -821,10 +840,8 @@ void BOPAlgo_RemoveFillets::RemoveFeatures(const Message_ProgressRange& theRange
             return;
         }
         FillGap& aFG = aVFG(i);
-#ifdef FC_DEBUG
-        ShapeOfIntersectResult = aFG.myIntersectResult;
-         ShapeOfTrimResult=aFG.myTrimResult;
-#endif       
+
+
         // No need to fill the history for solids if the history is not
         // requested and the current feature is the last one.
         Standard_Boolean isSolidsHistoryNeeded = HasHistory() || (i < (aNbF - 1));
@@ -833,6 +850,12 @@ void BOPAlgo_RemoveFillets::RemoveFeatures(const Message_ProgressRange& theRange
         RemoveFeature(aFG.Feature(), aFG.Solids(), aFG.FeatureFacesMap(), aFG.HasAdjacentFaces(),
                       aFG.Faces(), aFG.History(), isSolidsHistoryNeeded, aPSLoop.Next());
     }
+
+    #ifdef CREATE_DEBUG_SHAPE
+    ShapeOfIntersectResult = aVFG(0).myIntersectResult;
+    ShapeOfTrimResult = aVFG(0).myTrimResult;
+    ShapeOfFinalFaces = aVFG(0).myFinalFaces;
+#endif
 }
 
 //=======================================================================

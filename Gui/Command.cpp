@@ -42,6 +42,7 @@
 #include <Mod/Part/App/PartFeature.h>
 
 #include <Mod/CADSimplifier/App/SimplifierTool.h>
+#include <Mod/CADSimplifier/App/Test_MergeFaces.h>
 
 #pragma execution_character_set("utf-8")
 
@@ -67,9 +68,59 @@ CmdCADSimplifierTest::CmdCADSimplifierTest()
     sAccel        = "CTRL+H";
 }
 
-void CmdCADSimplifierTest::activated(int)
+void CmdCADSimplifierTest::activated(int iMsg)
 {
-    Base::Console().Message("Hello, World!\n");
+    Q_UNUSED(iMsg);
+    Gui::WaitCursor wc;
+
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
+    openCommand(QT_TRANSLATE_NOOP("Command", "Test"));
+
+
+    for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
+        try {
+            App::DocumentObject* pActiveDoc = it->getObject();
+            Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+
+            TopoDS_Shape sh = feat->Shape.getShape().getShape();
+
+            std::vector<TopoDS_Shape> Faces;
+            std::vector<std::string> subnames = it->getSubNames();
+
+             Test_MergeFaces tool;
+            tool.Body = sh;
+
+            for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();
+                 ++sub) {
+                TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
+                tool.FacesToMerge.Append(ref);
+            }
+            if (tool.Preform()) {
+                TopoDS_Shape nsh = tool.FaceMerged;
+                auto uiDoc = Gui::Application::Instance->activeDocument();
+                Part::Feature* pNewFeat = (Part::Feature*)uiDoc->getDocument()->addObject(
+                    "Part::Feature", "MergedFace");
+                pNewFeat->Shape.setValue(nsh);
+            }
+        }
+        catch (const Base::Exception& e) {
+            Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
+        }
+    }
+    // Check for the errors/warnings
+    /*   BOPTest::ReportAlerts(aRF.GetReport());
+
+    if (BRepTest_Objects::IsHistoryNeeded())
+        BRepTest_Objects::SetHistory(aRF.History());
+
+    if (aRF.HasErrors())
+        return 0;
+
+    const TopoDS_Shape& aResult = aRF.Shape();
+    DBRep::Set(theArgv[1], aResult);*/
+    commitCommand();
+    updateActive();
 }
 
 //===========================================================================
@@ -181,15 +232,6 @@ void CmdCADSimplifierRemoveFillets::activated(int iMsg)
             Part::Feature* pNewFeat = (Part::Feature*) uiDoc->getDocument()->addObject("Part::Feature", "RemoveFillet");
             pNewFeat->Shape .setValue( nsh);
             feat->Visibility.setValue(false);
-//#ifdef FC_DEBUG
-//            Part::Feature* pInsectFaces =
-//                (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "InsectFaces");
-//            pInsectFaces->Shape.setValue(tool.ShapeOfIntersectResult);
-//            Part::Feature* pTrimFaces =
-//                (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "TrimedFaces");
-//            pTrimFaces->Shape.setValue(tool.ShapeOfTrimResult);
-//
-//#endif
         }
         catch (const Base::Exception& e) {
             Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
