@@ -9,8 +9,8 @@
 #include <Gui/Selection.h>
 #include <Gui/SelectionObject.h>
 
-
 #include <Base/Exception.h>
+
 
 //#include <TopTools_ListOfShape.hxx>
 //#include <TopoDS_Compound.hxx>
@@ -20,11 +20,9 @@
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Solid.hxx>
-
 //#include<TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include<TopTools_IndexedMapOfShape.hxx>
 #include "TopExp_Explorer.hxx"
-
 
 
 namespace CADSimplifier
@@ -69,7 +67,7 @@ public:
 																   
 	std::vector<int> getAllNeighborFacesId(const std::vector<TopoDS_Shape>& selectedFaces,
                                            const TopTools_IndexedMapOfShape& allFace);
-   /* void findAdjacentFaces(TopTools_IndexedMapOfShape& theMFAdjacent,
+    /* void findAdjacentFaces(TopTools_IndexedMapOfShape& theMFAdjacent,
                            const Message_ProgressRange& theRange);
    */
 
