@@ -99,4 +99,147 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
 
 
      return box;
+ }     std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
+     for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
+         try {
+             App::DocumentObject* pActiveDoc = it->getObject();
+             Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+             TopoDS_Shape sh = feat->Shape.getShape().getShape();
+             std::vector<std::string> subnames = it->getSubNames();
+             for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();++sub) {
+                 TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
+                 selectedFaces.emplace_back(ref);
+             }
+         }
+         catch (const Base::Exception& e) {
+             Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
+         }
+     }
  }
+
+
+ std::vector<int> CADSimplifier::SimplifierTool::getAllNeighborFacesId(
+     const std::vector<TopoDS_Shape>& selectedFaces, const TopTools_IndexedMapOfShape& allFace)
+ {
+     std::vector<int> NeighborFacesIndexSet;
+     for (auto aSelectedface : selectedFaces) {       
+         TopoDS_Face selectedFace = TopoDS::Face(aSelectedface);  
+         for (Standard_Integer i = 1; i <= allFace.Extent(); ++i) {
+             TopoDS_Face aFace = TopoDS::Face(allFace.FindKey(i));
+             if (this->isHaveCommonEdge(aFace, selectedFace)) {
+                 int id = allFace.FindIndex(aFace);
+                 NeighborFacesIndexSet.emplace_back(id);
+             }
+         }
+     }
+     return NeighborFacesIndexSet;
+ }
+
+ //void CADSimplifier::SimplifierTool::findAdjacentFaces(TopTools_IndexedMapOfShape& theMFAdjacent,
+ //                                                      const Message_ProgressRange& theRange)
+ //{
+ //    //// Map the faces of the feature to avoid them in the map of adjacent faces
+ //    //TopoDS_Iterator aIt(myFeature);
+ //    //for (; aIt.More(); aIt.Next())
+ //    //    myFeatureFacesMap.Add(aIt.Value());
+ //    //Message_ProgressScope aPSOuter(theRange, NULL, 2);
+ //    //// Find faces adjacent to the feature using the connection map
+ //    //aIt.Initialize(myFeature);
+ //    //Message_ProgressScope aPSF(aPSOuter.Next(), "Looking for adjacent faces", 1, Standard_True);
+ //    //for (; aIt.More(); aIt.Next(), aPSF.Next()) {
+ //    //    if (!aPSF.More()) {
+ //    //        return;
+ //    //    }
+ //    //    const TopoDS_Shape& aF = aIt.Value();
+ //    //    TopExp_Explorer anExpE(aF, TopAbs_EDGE);
+ //    //    for (; anExpE.More(); anExpE.Next()) {
+ //    //        const TopoDS_Shape& aE = anExpE.Current();
+ //    //        const TopTools_ListOfShape* pAdjacentFaces = myEFMap->Seek(aE);
+ //    //        if (pAdjacentFaces) {
+ //    //            TopTools_ListIteratorOfListOfShape itLFA(*pAdjacentFaces);
+ //    //            for (; itLFA.More(); itLFA.Next()) {
+ //    //                const TopoDS_Shape& anAF = itLFA.Value();
+ //    //                if (!myFeatureFacesMap.Contains(anAF))
+ //    //                    theMFAdjacent.Add(anAF);
+ //    //            }
+ //    //        }
+ //    //    }      
+ //    //}
+ //}
+
+
+ //
+
+
+      for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
+         try {
+             App::DocumentObject* pActiveDoc = it->getObject();
+             Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+             TopoDS_Shape sh = feat->Shape.getShape().getShape();
+             std::vector<std::string> subnames = it->getSubNames();
+             for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();++sub) {
+                 TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
+                 selectedFaces.emplace_back(ref);
+             }
+         }
+         catch (const Base::Exception& e) {
+             Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
+         }
+     }
+ }
+
+
+ std::vector<int> CADSimplifier::SimplifierTool::getAllNeighborFacesId(
+     const std::vector<TopoDS_Shape>& selectedFaces, const TopTools_IndexedMapOfShape& allFace)
+ {
+     std::vector<int> NeighborFacesIndexSet;
+     for (auto aSelectedface : selectedFaces) {       
+         TopoDS_Face selectedFace = TopoDS::Face(aSelectedface);  
+         for (Standard_Integer i = 1; i <= allFace.Extent(); ++i) {
+             TopoDS_Face aFace = TopoDS::Face(allFace.FindKey(i));
+             if (this->isHaveCommonEdge(aFace, selectedFace)) {
+                 int id = allFace.FindIndex(aFace);
+                 NeighborFacesIndexSet.emplace_back(id);
+             }
+         }
+     }
+     return NeighborFacesIndexSet;
+ }
+
+ //void CADSimplifier::SimplifierTool::findAdjacentFaces(TopTools_IndexedMapOfShape& theMFAdjacent,
+ //                                                      const Message_ProgressRange& theRange)
+ //{
+ //    //// Map the faces of the feature to avoid them in the map of adjacent faces
+ //    //TopoDS_Iterator aIt(myFeature);
+ //    //for (; aIt.More(); aIt.Next())
+ //    //    myFeatureFacesMap.Add(aIt.Value());
+ //    //Message_ProgressScope aPSOuter(theRange, NULL, 2);
+ //    //// Find faces adjacent to the feature using the connection map
+ //    //aIt.Initialize(myFeature);
+ //    //Message_ProgressScope aPSF(aPSOuter.Next(), "Looking for adjacent faces", 1, Standard_True);
+ //    //for (; aIt.More(); aIt.Next(), aPSF.Next()) {
+ //    //    if (!aPSF.More()) {
+ //    //        return;
+ //    //    }
+ //    //    const TopoDS_Shape& aF = aIt.Value();
+ //    //    TopExp_Explorer anExpE(aF, TopAbs_EDGE);
+ //    //    for (; anExpE.More(); anExpE.Next()) {
+ //    //        const TopoDS_Shape& aE = anExpE.Current();
+ //    //        const TopTools_ListOfShape* pAdjacentFaces = myEFMap->Seek(aE);
+ //    //        if (pAdjacentFaces) {
+ //    //            TopTools_ListIteratorOfListOfShape itLFA(*pAdjacentFaces);
+ //    //            for (; itLFA.More(); itLFA.Next()) {
+ //    //                const TopoDS_Shape& anAF = itLFA.Value();
+ //    //                if (!myFeatureFacesMap.Contains(anAF))
+ //    //                    theMFAdjacent.Add(anAF);
+ //    //            }
+ //    //        }
+ //    //    }      
+ //    //}
+ //}
+
+
+ //
+
+
+ 

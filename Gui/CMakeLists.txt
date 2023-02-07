@@ -29,6 +29,9 @@ SET(CADSimplifierGui_SRCS
     PreCompiled.h
     Workbench.cpp
     Workbench.h
+
+    DlgGetNeighborFaces.h
+    DlgGetNeighborFaces.cpp
 )
 set(CADSimplifierGui_Scripts
     ../InitGui.py
@@ -36,6 +39,7 @@ set(CADSimplifierGui_Scripts
 
 SET(CADSimplifierGuiIcon_SVG
     Resources/icons/CADSimplifierWorkbench.svg
+    Resources/icons/CADSimplifier_GetNeighborFaces.svg
 )
 add_library(CADSimplifierGui SHARED ${CADSimplifierGui_SRCS} ${CADSimplifierGui_Scripts} ${CADSimplifierGuiIcon_SVG})
 target_link_libraries(CADSimplifierGui ${CADSimplifierGui_LIBS})

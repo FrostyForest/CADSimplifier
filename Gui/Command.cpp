@@ -88,7 +88,7 @@ void CmdCADSimplifierTest::activated(int iMsg)
             std::vector<TopoDS_Shape> Faces;
             std::vector<std::string> subnames = it->getSubNames();
 
-             Test_MergeFaces tool;
+            Test_MergeFaces tool;
             tool.Body = sh;
 
             for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();
