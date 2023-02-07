@@ -176,14 +176,124 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
         return;
     App::DocumentObject* docObj = doc->getObject((const char*)name);
     if (docObj && docObj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
-        d->object = docObj;               
-        TopTools_IndexedDataMapOfShapeListOfShape allFace;
+        d->object = docObj;
+
+    
+    ////测试
+    ////获取当前的solid
+    //TopoDS_Shape myShape = static_cast<Part::Feature*>(docObj)->Shape.getValue();
+    //TopTools_IndexedDataMapOfShapeListOfShape aEdgeFaceMap;
+    //TopExp::MapShapesAndAncestors(myShape, TopAbs_EDGE, TopAbs_FACE, aEdgeFaceMap);
+
+    ////获取选中当前面的所有边
+    //std::vector<Gui::SelectionObject> selection = Gui::Selection().getSelectionEx();
+    //auto it = selection.begin();
+    //App::DocumentObject* pActiveDoc = it->getObject();
+    //Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+    //TopoDS_Shape sh = feat->Shape.getShape().getShape();
+    //std::vector<std::string> subnames = it->getSubNames();
+    //std::vector<TopoDS_Shape> selectedFaces;
+    //for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end(); ++sub) {
+    //    TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
+    //    selectedFaces.push_back(ref);
+    //}
+
+    //std::vector<TopoDS_Shape> selectedEdgesOfFaces;
+    //TopExp_Explorer ex(selectedFaces.at(0), TopAbs_EDGE);
+    //while (ex.More()) {
+    //    selectedEdgesOfFaces.emplace_back(ex.Current());   
+    //    ex.Next();
+    //}
+    //d->face_ids.clear();
+    //Standard_Integer nE = aEdgeFaceMap.Extent();
+    //for (Standard_Integer i = 1; i <= nE; i++)
+    //{
+    //    //边
+    //    const TopoDS_Edge& E = TopoDS::Edge(aEdgeFaceMap.FindKey(i));
+    //    auto it = std::find(selectedEdgesOfFaces.begin(), selectedEdgesOfFaces.end(), E);       
+    //    if (it != selectedEdgesOfFaces.end()) {
+    //        //获取此边共享的所有面的列表，即相邻面
+    //        const TopTools_ListOfShape& aListOfFaces = aEdgeFaceMap.FindFromIndex(i);
+    //        //面的操作
+    //        d->face_ids.emplace_back(i);
+    //    }
+    //}
+
+
+    TopoDS_Shape myShape = static_cast<Part::Feature*>(docObj)->Shape.getValue();
+     // build up map edge->face  边和面的绑定bind
+    TopTools_IndexedDataMapOfShapeListOfShape edge2Face;
+    TopExp::MapShapesAndAncestors(myShape, TopAbs_EDGE, TopAbs_FACE,edge2Face);//添加进入的结构原型是TopAbs_FACE的
+    TopTools_IndexedMapOfShape mapOfShape;
+    TopExp::MapShapes(myShape, TopAbs_FACE, mapOfShape);
+    //获取选中的面
+    std::vector<TopoDS_Shape> selectedFaces;
+    std::vector<Gui::SelectionObject> selection = Gui::Selection().getSelectionEx();
+    auto it = selection.begin();
+    App::DocumentObject* pActiveDoc = it->getObject();
+    Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+    std::vector<std::string> subnames = it->getSubNames();
+    for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();
+            ++sub) {
+        TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
+        selectedFaces.emplace_back(ref);
+    }
+    const TopoDS_Shape& sh = selectedFaces.at(0);
+    //QMessageBox::about(NULL, tr(""),tr(std::to_string(sh.ShapeType()).c_str()));
+     for (int i = 1; i <= edge2Face.Extent(); ++i) {               
+        const TopTools_ListOfShape& los = edge2Face.FindFromIndex(i);
+        const TopoDS_Shape& face1 = los.First();
+        const TopoDS_Shape& face2 = los.Last();       
+        if ((los.Extent() == 2) && (sh.IsEqual(face1) || sh.IsEqual(face2))) {           
+            const TopoDS_Shape& edge = edge2Face.FindKey(i);                       
+            //2个面有交线相连
+            Standard_Boolean flag1 = BRep_Tool::HasContinuity(
+                TopoDS::Edge(edge), TopoDS::Face(face1), TopoDS::Face(face2));        
+            Standard_Boolean flag = false;
+            //2个面只有一个顶点相连
+            if (flag1!=true) {
+                TopExp_Explorer Ex(TopoDS::Face(face1), TopAbs_EDGE);
+                TopExp_Explorer Ex1(TopoDS::Face(face2), TopAbs_EDGE);
+                TopoDS_Vertex V1, V2, V3, V4;
+                for (; Ex.More(); Ex.Next()) {
+                    TopExp::Vertices(TopoDS::Edge(Ex.Current()), V1, V2);
+                    for (; Ex1.More(); Ex1.Next()) {
+                        TopExp::Vertices(TopoDS::Edge(Ex1.Current()), V3, V4);
+                        if ((V1.IsSame(V3) ||V2.IsSame(V4)) || (V1.IsSame(V4) ||V2.IsSame(V3))) {
+                            flag = true;
+                            break;
+                        }                  
+                    }
+                    if (flag)
+                        break;
+                }
+            }
+             if (flag1 || flag) {
+                if (sh.IsEqual(face1)) {                  
+                    int id = mapOfShape.FindIndex(face2);
+                    d->face_ids.emplace_back(id);
+                }
+                else if (sh.IsEqual(face2)) {
+                    int id = mapOfShape.FindIndex(face1);
+                    d->face_ids.emplace_back(id);
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
+       // TopTools_IndexedDataMapOfShapeListOfShape allFace;  
+      /*  TopTools_IndexedMapOfShape allFace;
         tool.getAllFacesInSolid(name, allFace);       
         std::vector<TopoDS_Shape> selectedFaces;
-        tool.getSelectedFaces(selectedFaces);       
+        tool.getSelectedFaces(selectedFaces);      
         d->face_ids.clear();
-        d->face_ids =
-        tool.getAllNeighborFacesId(selectedFaces, allFace);       
+        d->face_ids = tool.getAllNeighborFacesId(selectedFaces, allFace);  */     
         model->insertRows(0, d->face_ids.size());
         int index = 0;
         for (std::vector<int>::iterator it = d->face_ids.begin(); it != d->face_ids.end(); ++it) {

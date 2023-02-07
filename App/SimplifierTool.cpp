@@ -18,6 +18,7 @@
 #ifdef _MSC_VER
 #include <ppl.h>
 #endif
+#include<qmessagebox.h>
 using namespace CADSimplifier;
 using namespace std;
 using namespace Base;
@@ -114,6 +115,16 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      for (Ex.Init(face, TopAbs_EDGE); Ex.More(); Ex.Next()) {
          TopExp::Vertices(TopoDS::Edge(Ex.Current()), V1, V2);          
          for (Ex1.Init(face1, TopAbs_EDGE); Ex1.More(); Ex1.Next()) {
+            /* TopoDS_Edge edge = TopoDS::Edge(Ex.Current());
+             TopoDS_Edge edge1 = TopoDS::Edge(Ex1.Current());
+             if (edge.IsEqual(edge1)) {
+                 return true;
+             }
+             else {
+                 continue;
+             }*/
+
+
              TopExp::Vertices(TopoDS::Edge(Ex1.Current()), V3, V4);
              if ((V1.IsSame(V3) && V2.IsSame(V4)) || (V1.IsSame(V4) && V2.IsSame(V3))) {
                  return true;
@@ -121,9 +132,8 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
              else {
                  continue;
              }
- /* 
+  
  #ifdef FC_DEBUG            
-             TopExp::Vertices(TopoDS::Edge(Ex1.Current()), V3, V4);
              TopoDS_Edge edge = TopoDS::Edge(Ex.Current());
              TopoDS_Edge edge1 = TopoDS::Edge(Ex1.Current());
              if (edge.IsEqual(edge1)) {
@@ -133,28 +143,61 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
                  continue;
              }
 #endif
-*/
+
          }
      }
      return false;
  }
 
- void CADSimplifier::SimplifierTool::getAllFacesInSolid(const QByteArray& name, TopTools_IndexedDataMapOfShapeListOfShape& allFace)
+ void CADSimplifier::SimplifierTool::getAllFacesInSolid(const QByteArray& name,
+                                                        TopTools_IndexedMapOfShape& allFace)
  {
      App::Document* doc = App::GetApplication().getActiveDocument();
      if (!doc)
          return;
      App::DocumentObject* docObj = doc->getObject((const char*)name);
-     std::vector<TopoDS_Shape> selectedFaces;
+     //std::vector<TopoDS_Shape> selectedFaces;
      if (docObj && docObj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
          TopoDS_Shape myShape = static_cast<Part::Feature*>(docObj) ->Shape.getValue();
-         TopExp::MapShapesAndAncestors(myShape, TopAbs_FACE, TopAbs_COMPOUND, allFace);       
+         //TopExp::MapShapesAndAncestors(myShape, TopAbs_FACE, TopAbs_COMPOUND, allFace);       
+        TopExp::MapShapes(myShape, TopAbs_FACE,allFace);       
+
      }
  }
 
 
 
  void CADSimplifier::SimplifierTool::getSelectedFaces(std::vector<TopoDS_Shape>& selectedFaces) {
+     //单选
+     std::vector<Gui::SelectionObject> selection = Gui::Selection().getSelectionEx();
+     if (selection.size() != 1) {
+         QMessageBox::warning(nullptr, QObject::tr("Wrong selection"),
+             QObject::tr("Select an edge, face or body. Only one body is allowed."));
+         return;
+     }
+    if (!selection[0].isObjectTypeOf(Part::Feature::getClassTypeId()))
+     {
+         QMessageBox::warning(nullptr, QObject::tr("Wrong object type"),QObject::tr("Fillet works only on parts"));
+         return;
+     }
+    auto it = selection.begin();
+    try {
+        App::DocumentObject* pActiveDoc = it->getObject();
+        Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+        //TopoDS_Shape sh = feat->Shape.getShape().getShape();////TopAbs_COMPSOLID类型
+        std::vector<std::string> subnames = it->getSubNames();
+        for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();
+             ++sub) {
+            TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
+            selectedFaces.emplace_back(ref);
+        }
+    }
+    catch (const Base::Exception& e) {
+        Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
+    }
+    return;
+
+    //多选
      Base::Type partid = Base::Type::fromName("Part::Feature");
      std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
      for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
@@ -165,7 +208,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
              std::vector<std::string> subnames = it->getSubNames();
              for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();++sub) {
                  TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
-                 selectedFaces.push_back(ref);
+                 selectedFaces.emplace_back(ref);
              }
          }
          catch (const Base::Exception& e) {
@@ -176,8 +219,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
 
 
  std::vector<int> CADSimplifier::SimplifierTool::getAllNeighborFacesId(
-     const std::vector<TopoDS_Shape>& selectedFaces,
-     const TopTools_IndexedDataMapOfShapeListOfShape& allFace)
+     const std::vector<TopoDS_Shape>& selectedFaces, const TopTools_IndexedMapOfShape& allFace)
  {
      std::vector<int> NeighborFacesIndexSet;
      for (auto aSelectedface : selectedFaces) {       
@@ -193,8 +235,40 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      return NeighborFacesIndexSet;
  }
 
+ //void CADSimplifier::SimplifierTool::findAdjacentFaces(TopTools_IndexedMapOfShape& theMFAdjacent,
+ //                                                      const Message_ProgressRange& theRange)
+ //{
+ //    //// Map the faces of the feature to avoid them in the map of adjacent faces
+ //    //TopoDS_Iterator aIt(myFeature);
+ //    //for (; aIt.More(); aIt.Next())
+ //    //    myFeatureFacesMap.Add(aIt.Value());
+ //    //Message_ProgressScope aPSOuter(theRange, NULL, 2);
+ //    //// Find faces adjacent to the feature using the connection map
+ //    //aIt.Initialize(myFeature);
+ //    //Message_ProgressScope aPSF(aPSOuter.Next(), "Looking for adjacent faces", 1, Standard_True);
+ //    //for (; aIt.More(); aIt.Next(), aPSF.Next()) {
+ //    //    if (!aPSF.More()) {
+ //    //        return;
+ //    //    }
+ //    //    const TopoDS_Shape& aF = aIt.Value();
+ //    //    TopExp_Explorer anExpE(aF, TopAbs_EDGE);
+ //    //    for (; anExpE.More(); anExpE.Next()) {
+ //    //        const TopoDS_Shape& aE = anExpE.Current();
+ //    //        const TopTools_ListOfShape* pAdjacentFaces = myEFMap->Seek(aE);
+ //    //        if (pAdjacentFaces) {
+ //    //            TopTools_ListIteratorOfListOfShape itLFA(*pAdjacentFaces);
+ //    //            for (; itLFA.More(); itLFA.Next()) {
+ //    //                const TopoDS_Shape& anAF = itLFA.Value();
+ //    //                if (!myFeatureFacesMap.Contains(anAF))
+ //    //                    theMFAdjacent.Add(anAF);
+ //    //            }
+ //    //        }
+ //    //    }      
+ //    //}
+ //}
 
- 
+
+ //
 
 
  

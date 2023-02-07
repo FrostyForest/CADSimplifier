@@ -20,7 +20,8 @@
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Solid.hxx>
-#include<TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+//#include<TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+#include<TopTools_IndexedMapOfShape.hxx>
 #include "TopExp_Explorer.hxx"
 
 
@@ -66,12 +67,15 @@ public:
 	
 																   
 	std::vector<int> getAllNeighborFacesId(const std::vector<TopoDS_Shape>& selectedFaces,
-                                const TopTools_IndexedDataMapOfShapeListOfShape& allFace);
+                                           const TopTools_IndexedMapOfShape& allFace);
+   /* void findAdjacentFaces(TopTools_IndexedMapOfShape& theMFAdjacent,
+                           const Message_ProgressRange& theRange);
+   */
+
 
     //help
     bool isHaveCommonEdge(const TopoDS_Face& face, const TopoDS_Face& face1);
-    void getAllFacesInSolid(const QByteArray& name,
-                            TopTools_IndexedDataMapOfShapeListOfShape& allFace);
+    void getAllFacesInSolid(const QByteArray& name, TopTools_IndexedMapOfShape& allFace);
     void getSelectedFaces(std::vector<TopoDS_Shape>& selectedFaces);
 public :
     inline void setShape(const TopoDS_Shape& shape) { this->_Shape = shape; }
