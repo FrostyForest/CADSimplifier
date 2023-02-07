@@ -496,8 +496,8 @@ private://! @name Private methods performing the operation
         Bnd_Box aFeatureBox;
         BRepBndLib::Add(myFeature, aFeatureBox);
 
-//        const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
-         Standard_Real anExtLength = 2;
+        const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
+        //        Standard_Real anExtLength = 2;
 
         const Standard_Integer aNbFA = theMFAdjacent.Extent();
         Message_ProgressScope aPS(theRange, "Extending adjacent faces", aNbFA);
