@@ -111,8 +111,8 @@ bool CADSimplifier::SimplifierTool::fixShape(
     std::vector<TopoDS_Shape> selectedFaces;
     getSelectedFaces(selectedFaces);*/  
 
-    ShapeFix_Shape fix;
-    fix.Perform();
+    /*ShapeFix_Shape fix;
+    fix.Perform();*/
 
 
     TopoDS_Shape myShape;

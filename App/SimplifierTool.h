@@ -12,15 +12,12 @@
 #include <Base/Exception.h>
 
 
-//#include <TopTools_ListOfShape.hxx>
-//#include <TopoDS_Compound.hxx>
-//#include <TopoDS_Wire.hxx>
+
 #include"TopoDS.hxx"
 #include"TopoDS_Vertex.hxx"
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Solid.hxx>
-//#include<TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include<TopTools_IndexedMapOfShape.hxx>
 #include "TopExp_Explorer.hxx"
 
@@ -69,9 +66,6 @@ public:
 	std::vector<int> getAllNeighborFacesIdOfNoPlane(const std::vector<TopoDS_Shape>& selectedFaces,
                                                     const TopTools_IndexedMapOfShape& allFace,
                                                     std::vector<TopoDS_Shape>& destFaces);
-  
-
-
     //help
     bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
     bool getFaceGemoInfo(const TopoDS_Face& OCCface,double& radius,...);

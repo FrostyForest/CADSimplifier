@@ -71,22 +71,14 @@ public:
 
 protected:
     void findShapes();
-    //void setupGetNeighborFaces(const std::vector<App::DocumentObject*>&);
     void changeEvent(QEvent* e) override;
     virtual const char* getShapeType() const;
 
 private:
     void onSelectionChanged(const Gui::SelectionChanges& msg) override;
-    void onSelectShape(const QString& shapeTypeName, const QString& subelement, int type);
-    //void onSelectFace(const QString& subelement, int type);
-    //void onSelectEdge(const QString& subelement, int type);
-    //void onSelectEdgesOfFace(const QString& subelement, int type);
-    //void SelectionFaceChanged(const QItemSelection& selected, const QItemSelection& deselected);
+    void onSelectShape(const QString& shapeTypeName, const QString& subelement, int type);   
     void onDeleteObject(const App::DocumentObject&);
     void onDeleteDocument(const App::Document&);
-//    void onSelectEdge(const QString& subelement, int type);
-//    void onSelectEdgesOfFace(const QString& subelement, int type);
-
 private Q_SLOTS:
     void on_shapeObject_activated(int);
     void on_selectEdges_toggled(bool);

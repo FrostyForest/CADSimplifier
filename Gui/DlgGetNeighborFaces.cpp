@@ -169,8 +169,6 @@ public:
             return element.substr(0, 4) == "Face";
         else
             return element.substr(0, 4) == "Edge";
-        else
-            return element.substr(0, 4) == "Face";
     }
 };
 class DlgGetNeighborFaces::Private
@@ -466,7 +464,6 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
     model->removeRows(0, model->rowCount());
             
     Gui::WaitCursor wc;
-    QByteArray name = ui->shapeObject->itemData(itemPos).toByteArray();
     App::Document* doc = App::GetApplication().getActiveDocument();
     if (!doc)
         return;
