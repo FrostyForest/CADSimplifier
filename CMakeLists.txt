@@ -1,5 +1,4 @@
 
-
 add_subdirectory(App)
 if(BUILD_GUI)
     add_subdirectory(Gui)

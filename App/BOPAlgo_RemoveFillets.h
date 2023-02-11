@@ -137,7 +137,3 @@ private:
     TopoDS_Shape ShapeOfFinalFaces;
 #endif
 };
-
-
-
-

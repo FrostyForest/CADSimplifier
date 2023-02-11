@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>447</width>
-    <height>475</height>
+    <width>466</width>
+    <height>331</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -72,7 +72,7 @@
             <string>Select edges</string>
            </property>
            <property name="checked">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -80,6 +80,9 @@
           <widget class="QRadioButton" name="selectFaces">
            <property name="text">
             <string>Select faces</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -162,27 +165,27 @@
          </widget>
         </item>
         <item>
-         <widget class="Gui::QuantitySpinBox" name="filletStartRadius" native="true">
+         <widget class="Gui::QuantitySpinBox" name="filletStartRadius">
           <property name="unit" stdset="0">
            <string notr="true">mm</string>
           </property>
-          <property name="singleStep" stdset="0">
+          <property name="singleStep">
            <double>0.100000000000000</double>
           </property>
-          <property name="value" stdset="0">
+          <property name="value">
            <double>1.000000000000000</double>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="Gui::QuantitySpinBox" name="filletEndRadius" native="true">
+         <widget class="Gui::QuantitySpinBox" name="filletEndRadius">
           <property name="unit" stdset="0">
            <string notr="true">mm</string>
           </property>
-          <property name="singleStep" stdset="0">
+          <property name="singleStep">
            <double>0.100000000000000</double>
           </property>
-          <property name="value" stdset="0">
+          <property name="value">
            <double>1.000000000000000</double>
           </property>
          </widget>

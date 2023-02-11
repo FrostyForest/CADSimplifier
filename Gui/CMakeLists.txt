@@ -13,6 +13,7 @@ include_directories(
 set(CADSimplifierGui_LIBS
     CADSimplifier
     Part
+    PartGui
     FreeCADGui
 )
 

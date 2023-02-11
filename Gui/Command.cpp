@@ -88,7 +88,7 @@ void CmdCADSimplifierTest::activated(int iMsg)
             std::vector<TopoDS_Shape> Faces;
             std::vector<std::string> subnames = it->getSubNames();
 
-             Test_MergeFaces tool;
+            Test_MergeFaces tool;
             tool.Body = sh;
 
             for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();
@@ -121,7 +121,7 @@ void CmdCADSimplifierTest::activated(int iMsg)
     DBRep::Set(theArgv[1], aResult);*/
     commitCommand();
     updateActive();
-    Base::Console().Message("Hello, World!\n"); 
+
 }
 
 //===========================================================================
@@ -203,14 +203,10 @@ CmdCADSimplifierRemoveFillets::CmdCADSimplifierRemoveFillets()
 void CmdCADSimplifierRemoveFillets::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    Gui::WaitCursor wc;//表示当前程序繁忙不接受用户的输入，通常在做如文件加载和复杂计算操作之类的耗时操作时使用
-    Base::Type partid = Base::Type::fromName("Part::Feature");//获取对象类型
-    std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);//从选择集中筛选出特定类型的对象并存储到objs中
-    openCommand(QT_TRANSLATE_NOOP("Command", "RemoveFillet"));//开启UnDo/ReDo事务等待处理 
-    //从选定的形状中删除圆角
-    //遍历一个选择对象列表，获取每个对象的形状，
-    //然后使用SimplifierTool从形状中删除圆角。
-    //最后，用修改后的形状创建一个新的Part::Feature对象，并将原始对象（被修剪过的）的可见性设置为false。
+    Gui::WaitCursor wc;
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
+    openCommand(QT_TRANSLATE_NOOP("Command", "RemoveFillet"));
     for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
         try {
             App::DocumentObject* pActiveDoc = it->getObject();
@@ -249,10 +245,9 @@ void CmdCADSimplifierRemoveFillets::activated(int iMsg)
 
     const TopoDS_Shape& aResult = aRF.Shape();
     DBRep::Set(theArgv[1], aResult);*/
-    commitCommand();//对激活的文档提交undo事务操作
-    updateActive();//更新文档
+    commitCommand();
+    updateActive();
 }
-//选择到任一个面，命令即可处于就绪状态（图标变亮）
 bool CmdCADSimplifierRemoveFillets::isActive()
 { 
     Base::Type partid = Base::Type::fromName("Part::Feature");
@@ -274,30 +269,27 @@ bool CmdCADSimplifierRemoveFillets::isActive()
 //  CADSimplifier_GetNeighborFaces
 //===========================================================================
 DEF_STD_CMD_A(CmdCADSimplifier_GetNeighborFaces)
-// CADSimplifier_GetAllNeighborFacesOfASelectedFace
 CmdCADSimplifier_GetNeighborFaces::CmdCADSimplifier_GetNeighborFaces() 
     : Command("CADSimplifier_GetNeighborFaces")
 {
     sAppModule = "CADSimplifier";
     sGroup = QT_TR_NOOP("CADSimplifier");
-    sMenuText = QT_TR_NOOP("GetNeighborFaces...");
-    sToolTipText = QT_TR_NOOP("Get All Neighbor Faces Of A Selected Face");
+    sMenuText = QT_TR_NOOP("获取邻接面");
+    sToolTipText = QT_TR_NOOP("自动获取所有的邻接面");
     sWhatsThis = "CADSimplifier_GetNeighborFaces";
     sStatusTip = sToolTipText;
-    //sPixmap = "CADSimplifier_GetNeighborFaces";
-    sPixmap = "CADSimplifierWorkbench";
+    sPixmap = "CADSimplifier_GetNeighborFaces";   
+    sAccel = "SHIFT+G"; 
 }
 
 void CmdCADSimplifier_GetNeighborFaces::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
-    //显示窗口
     Gui::Control().showDialog(new CADSimplifierGui::TaskGetNeighborFaces(nullptr));
 }
 
 bool CmdCADSimplifier_GetNeighborFaces::isActive()
 { 
-    //return (hasActiveDocument() && !Gui::Control().activeDialog());
     Base::Type partid = Base::Type::fromName("Part::Feature");
     std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
     for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
@@ -314,6 +306,33 @@ bool CmdCADSimplifier_GetNeighborFaces::isActive()
 
 
 
+DEF_STD_CMD(CmdCADSimplifier_ShapeHealing)
+CmdCADSimplifier_ShapeHealing::CmdCADSimplifier_ShapeHealing()
+    : Command("CADSimplifier_ShapeHealing")
+{
+    sAppModule = "CADSimplifier";
+    sGroup = QT_TR_NOOP("CADSimplifier");
+    sMenuText = QT_TR_NOOP("修补shape");
+    sToolTipText = QT_TR_NOOP("自动修补选择的shape");
+    sWhatsThis = "CADSimplifier_ShapeHealing";
+    sStatusTip = sToolTipText;
+    sPixmap = "CADSimplifier_ShapeHealing";
+    sAccel = "SHIFT+H";
+}
+
+void CmdCADSimplifier_ShapeHealing::activated(int iMsg) {
+
+    SimplifierTool tool;
+    //std::vector<TopoDS_Shape> shapeVec;
+    0.001, 0.001, 0.1;
+    double precision = 0.001;
+    double mintol = 0.001;
+    double maxtol = 0.1;
+    tool.fixShape(/*shapeVec*/ precision, mintol,maxtol);   
+    //Base::Console().Message("Hello, World!\n");
+}
+
+
 //===========================================================================
 // Application 中加入命令
 //===========================================================================
@@ -323,4 +342,5 @@ void CreateCADSimplifierCommands(void)
     rcCmdMgr.addCommand(new CmdCADSimplifierTest());
     rcCmdMgr.addCommand(new CmdCADSimplifierRemoveFillets());
 	rcCmdMgr.addCommand(new CmdCADSimplifier_GetNeighborFaces());
+    rcCmdMgr.addCommand(new CmdCADSimplifier_ShapeHealing());
 }

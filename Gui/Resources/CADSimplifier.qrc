@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>icons/CADSimplifierWorkbench.svg</file>
         <file>icons/CADSimplifier_GetNeighborFaces.svg</file>
+        <file>icons/CADSimplifier_ShapeHealing.svg</file>
     </qresource>
 </RCC>
