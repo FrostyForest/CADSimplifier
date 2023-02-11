@@ -17,8 +17,8 @@ link_directories(${OCC_LIBRARY_DIR})
 set(CADSimplifier_LIBS
     ${OCC_LIBRARIES}
     ${OCC_DEBUG_LIBRARIES}
-    #CADSimplifier
     Part
+    PartGui
 	FreeCADApp
     FreeCADGui
 )

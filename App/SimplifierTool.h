@@ -1,7 +1,16 @@
 #pragma once
 
 #include <App/ComplexGeoData.h>
+#include <App/Application.h>
+#include <App/Document.h>
+#include <App/DocumentObject.h>
+#include <Mod/CADSimplifier/CADSimplifierGlobal.h>
+#include <Mod/Part/App/PartFeature.h>
+#include <Gui/Selection.h>
+#include <Gui/SelectionObject.h>
+
 #include <Base/Exception.h>
+
 
 //#include <TopTools_ListOfShape.hxx>
 //#include <TopoDS_Compound.hxx>
@@ -11,16 +20,14 @@
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Solid.hxx>
-#include<TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+//#include<TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+#include<TopTools_IndexedMapOfShape.hxx>
 #include "TopExp_Explorer.hxx"
 
 
-
-#include <App/ComplexGeoData.h>
-#include <Mod/CADSimplifier/CADSimplifierGlobal.h>
 namespace CADSimplifier
 {
-class CADSimplifierExport SimplifierTool: public Data::ComplexGeoData
+class CADSimplifierExport  SimplifierTool: public Data::ComplexGeoData
 {
     TYPESYSTEM_HEADER_WITH_OVERRIDE();
 
@@ -56,15 +63,19 @@ public:
     void Restore(Base::XMLReader& reader) override;
 
     TopoDS_Shape RemoveFillet(const std::vector<TopoDS_Shape>& s) ;
-	
-																   
-	std::vector<int> getAllNeighborFacesId(const std::vector<TopoDS_Shape>& selectedFaces,
-                                const TopTools_IndexedDataMapOfShapeListOfShape& allFace);
+
+    bool fixShape(double precision, double mintol,
+                  double maxtol /*const std::vector<TopoDS_Shape>& shapeVec*/);																   
+	std::vector<int> getAllNeighborFacesIdOfNoPlane(const std::vector<TopoDS_Shape>& selectedFaces,
+                                                    const TopTools_IndexedMapOfShape& allFace,
+                                                    std::vector<TopoDS_Shape>& destFaces);
+  
+
 
     //help
-    bool isHaveCommonEdge(const TopoDS_Face& face, const TopoDS_Face& face1);
-    void getAllFacesInSolid(const QByteArray& name,
-                            TopTools_IndexedDataMapOfShapeListOfShape& allFace);
+    bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
+    bool getFaceGemoInfo(const TopoDS_Face& OCCface,double& radius,...);
+    void getAllFacesOfASolidofDocument(const QByteArray& featureName,TopTools_IndexedMapOfShape& allFace);
     void getSelectedFaces(std::vector<TopoDS_Shape>& selectedFaces);
 public :
     inline void setShape(const TopoDS_Shape& shape) { this->_Shape = shape; }
@@ -79,4 +90,5 @@ public:
     TopoDS_Shape ShapeOfTrimResult;
 #endif
 };
+
 }// namespace CADSimplifier
