@@ -10,8 +10,6 @@
 #include <Gui/SelectionObject.h>
 
 #include <Base/Exception.h>
-
-
 //#include <TopTools_ListOfShape.hxx>
 //#include <TopoDS_Compound.hxx>
 //#include <TopoDS_Wire.hxx>
