@@ -201,9 +201,9 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          Handle(Geom_ConicalSurface) SS = Handle(Geom_ConicalSurface)::DownCast(S);            
          radius = SS->RefRadius();         
      }   
-      else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {//环形曲面 类似游泳圈
+      else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {//环形曲面
          Handle(Geom_ToroidalSurface) SS = Handle(Geom_ToroidalSurface)::DownCast(S);
-          radius = SS->MinorRadius();//取最小半径，即最大曲率         
+          radius = SS->MinorRadius();//取最大曲率         
      }
       else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
           Handle(Geom_BSplineSurface) SS = Handle(Geom_BSplineSurface)::DownCast(S);                         
@@ -211,27 +211,9 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
           BRepAdaptor_Surface adapt(face);
           double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
           double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
-          BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());//分为u，v2个垂直方向， 求的最高阶导和线性容差
+          BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());
           radius = 1 / prop.MaxCurvature();           
       }
-#ifdef FC_DEBUG
-      else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {//偏移面  沿着平面的法向方向移动一定的距离得到的新的平面，即原来平面的一份深拷贝
-          Handle(Geom_OffsetSurface) SS = Handle(Geom_OffsetSurface)::DownCast(S);
-          QString text;
-          text = QString::fromLatin1("the input face type is OffsetSurface，hasnot curvature radius parameter");
-          QMessageBox::about(nullptr, QString::fromLatin1("Error Tip"), text);
-          return false;
-      }
-#endif// FC_DEBUG
-#ifdef FC_DEBUG
-      else if (S->IsKind(STANDARD_TYPE(Geom_RectangularTrimmedSurface))) {//裁剪平面 对平面在u和v方向上各自取一定的范围进行裁剪
-          Handle(Geom_RectangularTrimmedSurface) SS = Handle(Geom_RectangularTrimmedSurface)::DownCast(S);
-          QString text;
-          text = QString::fromLatin1("the input face type is RectangularTrimmedSurface，hasnot curvature radius parameter");
-          QMessageBox::about(nullptr, QString::fromLatin1("Error Tip"), text);
-          return false;
-      }
-#endif//FC_DEBUG
      else {
          auto desc = S->get_type_descriptor();        
          QString text;
