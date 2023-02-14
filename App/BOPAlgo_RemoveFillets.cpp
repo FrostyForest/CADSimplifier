@@ -12,6 +12,7 @@
 #include <BOPTools_AlgoTools.hxx>
 #include <BOPTools_Parallel.hxx>
 #include <BOPTools_Set.hxx>
+#include <Geom_ConicalSurface.hxx>
 
 #include <Bnd_Box.hxx>
 
@@ -40,12 +41,15 @@
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
-
+#include <Geom_BoundedSurface.hxx>
+#include <geomlib.hxx>
+#include <BRepLib_MakeFace.hxx>
 
  #ifdef FC_DEBUG
     #define CREATE_DEBUG_SHAPE
 #endif
-
+#include <BRepAdaptor_Surface.hxx>
+const Standard_Real Torerlance = 1.0E-3;
 //=======================================================================
 // static methods declaration
 //=======================================================================
@@ -101,6 +105,350 @@ static void TakeModified(const TopoDS_Shape& theS, BOPAlgo_Builder& theBuilder,
 static void FindSolid(const TopoDS_Shape& theSolIn, const TopTools_ListOfShape& theSolidsRes,
                       const TopTools_IndexedDataMapOfShapeListOfShape& theAdjFaces,
                       BOPAlgo_Builder& theBuilder, TopoDS_Shape& theSolOut);
+static void SimplifyElmentaryFaces(const TopTools_IndexedMapOfShape& theMFAdjacented,
+                                   TopTools_IndexedMapOfShape& aMFAdjacentSimplified);
+
+
+//void MyExtendFace(const TopoDS_Face& theF, const Standard_Real theExtVal,
+//                         const Standard_Boolean theExtUMin, const Standard_Boolean theExtUMax,
+//                         const Standard_Boolean theExtVMin, const Standard_Boolean theExtVMax,
+//                         TopoDS_Face& theFExtended)
+//{
+//    // Get face bounds
+//    BRepAdaptor_Surface aBAS(theF);
+//    Standard_Real aFUMin = aBAS.FirstUParameter(), aFUMax = aBAS.LastUParameter(),
+//                  aFVMin = aBAS.FirstVParameter(), aFVMax = aBAS.LastVParameter();
+//    const Standard_Real aTol = BRep_Tool::Tolerance(theF);
+//
+//    // Surface to build the face
+//    Handle(Geom_Surface) aS;
+//
+//    const GeomAbs_SurfaceType aType = aBAS.GetType();
+//    // treat analytical surfaces first
+//    if (aType == GeomAbs_Plane || aType == GeomAbs_Sphere || aType == GeomAbs_Cylinder
+//        || aType == GeomAbs_Torus || aType == GeomAbs_Cone) {
+//        // Get basis transformed basis surface
+//        Handle(Geom_Surface) aSurf =
+//            Handle(Geom_Surface)::DownCast(aBAS.Surface().Surface()->Transformed(aBAS.Trsf()));
+//
+//        // Get bounds of the basis surface
+//        Standard_Real aSUMin, aSUMax, aSVMin, aSVMax;
+//        aSurf->Bounds(aSUMin, aSUMax, aSVMin, aSVMax);
+//
+//        Standard_Boolean isUPeriodic = aBAS.IsUPeriodic();
+//        Standard_Real anUPeriod = isUPeriodic ? aBAS.UPeriod() : 0.0;
+//        if (isUPeriodic) {
+//            // Adjust face bounds to first period
+//            Standard_Real aDelta = aFUMax - aFUMin;
+//            aFUMin = Max(aSUMin, aFUMin + anUPeriod * Ceiling((aSUMin - aFUMin) / anUPeriod));
+//            aFUMax = aFUMin + aDelta;
+//        }
+//
+//        Standard_Boolean isVPeriodic = aBAS.IsVPeriodic();
+//        Standard_Real aVPeriod = isVPeriodic ? aBAS.VPeriod() : 0.0;
+//        if (isVPeriodic) {
+//            // Adjust face bounds to first period
+//            Standard_Real aDelta = aFVMax - aFVMin;
+//            aFVMin = Max(aSVMin, aFVMin + aVPeriod * Ceiling((aSVMin - aFVMin) / aVPeriod));
+//            aFVMax = aFVMin + aDelta;
+//        }
+//
+//        // Enlarge the face
+//        Standard_Real anURes = 0., aVRes = 0.;
+//        if (theExtUMin || theExtUMax)
+//            anURes = aBAS.UResolution(theExtVal);
+//        if (theExtVMin || theExtVMax)
+//            aVRes = aBAS.VResolution(theExtVal);
+//
+//        if (theExtUMin)
+//            aFUMin = Max(aSUMin, aFUMin - anURes);
+//        if (theExtUMax)
+//            aFUMax = Min(isUPeriodic ? aFUMin + anUPeriod : aSUMax, aFUMax + anURes);
+//        if (theExtVMin)
+//            aFVMin = Max(aSVMin, aFVMin - aVRes);
+//        if (theExtVMax)
+//            aFVMax = Min(isVPeriodic ? aFVMin + aVPeriod : aSVMax, aFVMax + aVRes);
+//
+//        // Check if the periodic surface should become closed.
+//        // In this case, use the basis surface with basis bounds.
+//        const Standard_Real anEps = Precision::PConfusion();
+//        if (isUPeriodic && Abs(aFUMax - aFUMin - anUPeriod) < anEps) {
+//            aFUMin = aSUMin;
+//            aFUMax = aSUMax;
+//        }
+//        if (isVPeriodic && Abs(aFVMax - aFVMin - aVPeriod) < anEps) {
+//            aFVMin = aSVMin;
+//            aFVMax = aSVMax;
+//        }
+//
+//        aS = aSurf;
+//    }
+//    else {
+//        // General case
+//
+//        Handle(Geom_BoundedSurface) aSB =
+//            Handle(Geom_BoundedSurface)::DownCast(BRep_Tool::Surface(theF));
+//        if (aSB.IsNull()) {
+//            theFExtended = theF;
+//            return;
+//        }
+//
+//        // Get surfaces bounds
+//        Standard_Real aSUMin, aSUMax, aSVMin, aSVMax;
+//        aSB->Bounds(aSUMin, aSUMax, aSVMin, aSVMax);
+//
+//        Standard_Boolean isUClosed = aSB->IsUClosed();
+//        Standard_Boolean isVClosed = aSB->IsVClosed();
+//
+//        // Check if the extension in necessary directions is done
+//        Standard_Boolean isExtUMin = Standard_False, isExtUMax = Standard_False,
+//                         isExtVMin = Standard_False, isExtVMax = Standard_False;
+//
+//        // UMin
+//        if (theExtUMin && !isUClosed && !Precision::IsInfinite(aSUMin)) {
+//            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_True, Standard_False);
+//            isExtUMin = Standard_True;
+//        }
+//        // UMax
+//        if (theExtUMax && !isUClosed && !Precision::IsInfinite(aSUMax)) {
+//            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_True, Standard_True);
+//            isExtUMax = Standard_True;
+//        }
+//        // VMin
+//        if (theExtVMin && !isVClosed && !Precision::IsInfinite(aSVMax)) {
+//            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_False, Standard_False);
+//            isExtVMin = Standard_True;
+//        }
+//        // VMax
+//        if (theExtVMax && !isVClosed && !Precision::IsInfinite(aSVMax)) {
+//            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_False, Standard_True);
+//            isExtVMax = Standard_True;
+//        }
+//
+//        aS = aSB;
+//
+//        // Get new bounds
+//        aS->Bounds(aSUMin, aSUMax, aSVMin, aSVMax);
+//        if (isExtUMin)
+//            aFUMin = aSUMin;
+//        if (isExtUMax)
+//            aFUMax = aSUMax;
+//        if (isExtVMin)
+//            aFVMin = aSVMin;
+//        if (isExtVMax)
+//            aFVMax = aSVMax;
+//    }
+//
+//    BRepLib_MakeFace aMF(aS, aFUMin, aFUMax, aFVMin, aFVMax, aTol);
+//    theFExtended = *(TopoDS_Face*)&aMF.Shape();
+//    if (theF.Orientation() == TopAbs_REVERSED)
+//        theFExtended.Reverse();
+//}
+void MyExtendFace(const TopoDS_Face& theF, const Standard_Real theExtVal,
+                  const Standard_Boolean theExtUMin, const Standard_Boolean theExtUMax,
+                  const Standard_Boolean theExtVMin, const Standard_Boolean theExtVMax,
+                  TopoDS_Face& theFExtended)
+{
+    // Get face bounds
+    BRepAdaptor_Surface aBAS(theF);
+    Standard_Real aFUMin = aBAS.FirstUParameter(), aFUMax = aBAS.LastUParameter(),
+                  aFVMin = aBAS.FirstVParameter(), aFVMax = aBAS.LastVParameter();
+    const Standard_Real aTol = BRep_Tool::Tolerance(theF);
+
+    // Surface to build the face
+    Handle(Geom_Surface) aS;
+
+    const GeomAbs_SurfaceType aType = aBAS.GetType();
+    // treat analytical surfaces first
+    if (aType == GeomAbs_Plane || aType == GeomAbs_Sphere || aType == GeomAbs_Cylinder
+        || aType == GeomAbs_Torus ) {
+        // Get basis transformed basis surface
+        Handle(Geom_Surface) aSurf =
+               Handle(Geom_Surface)::DownCast(aBAS.Surface().Surface()->Transformed(aBAS.Trsf()));
+        // Get bounds of the basis surface
+        Standard_Real aSUMin, aSUMax, aSVMin, aSVMax;
+        aSurf->Bounds(aSUMin, aSUMax, aSVMin, aSVMax);
+
+        Standard_Boolean isUPeriodic = aBAS.IsUPeriodic();
+        Standard_Real anUPeriod = isUPeriodic ? aBAS.UPeriod() : 0.0;
+        if (isUPeriodic) {
+            // Adjust face bounds to first period
+            Standard_Real aDelta = aFUMax - aFUMin;
+            aFUMin = Max(aSUMin, aFUMin + anUPeriod * Ceiling((aSUMin - aFUMin) / anUPeriod));
+            aFUMax = aFUMin + aDelta;
+        }
+
+        Standard_Boolean isVPeriodic = aBAS.IsVPeriodic();
+        Standard_Real aVPeriod = isVPeriodic ? aBAS.VPeriod() : 0.0;
+        if (isVPeriodic) {
+            // Adjust face bounds to first period
+            Standard_Real aDelta = aFVMax - aFVMin;
+            aFVMin = Max(aSVMin, aFVMin + aVPeriod * Ceiling((aSVMin - aFVMin) / aVPeriod));
+            aFVMax = aFVMin + aDelta;
+        }
+
+        // Enlarge the face
+        Standard_Real anURes = 0., aVRes = 0.;
+        if (theExtUMin || theExtUMax)
+            anURes = aBAS.UResolution(theExtVal);
+        if (theExtVMin || theExtVMax)
+            aVRes = aBAS.VResolution(theExtVal);
+
+        if (theExtUMin)
+            aFUMin = Max(aSUMin, aFUMin - anURes);
+        if (theExtUMax)
+            aFUMax = Min(isUPeriodic ? aFUMin + anUPeriod : aSUMax, aFUMax + anURes);
+        if (theExtVMin)
+            aFVMin = Max(aSVMin, aFVMin - aVRes);
+        if (theExtVMax)
+            aFVMax = Min(isVPeriodic ? aFVMin + aVPeriod : aSVMax, aFVMax + aVRes);
+
+        // Check if the periodic surface should become closed.
+        // In this case, use the basis surface with basis bounds.
+        const Standard_Real anEps = Precision::PConfusion();
+        if (isUPeriodic && Abs(aFUMax - aFUMin - anUPeriod) < anEps) {
+            aFUMin = aSUMin;
+            aFUMax = aSUMax;
+        }
+        if (isVPeriodic && Abs(aFVMax - aFVMin - aVPeriod) < anEps) {
+            aFVMin = aSVMin;
+            aFVMax = aSVMax;
+        }
+
+        aS = aSurf;
+    }
+    else if ( aType == GeomAbs_Cone) {
+        // Get basis transformed basis surface
+        Handle(Geom_Surface) S = BRep_Tool::Surface(theF);
+        Handle(Geom_ConicalSurface) SS = Handle(Geom_ConicalSurface)::DownCast(S);
+        gp_Pnt ptApex = SS->Apex();
+        double dRadiu = SS->RefRadius();
+        Standard_Real U1, U2, V1, V2;
+        SS->Bounds(U1, U2, V1, V2);
+
+        Handle(Geom_Surface) aSurf =
+            Handle(Geom_Surface)::DownCast(aBAS.Surface().Surface()->Transformed(aBAS.Trsf()));
+
+
+        Standard_Real A1, A2, A3, B1, B2, B3, C1, C2, C3, D;
+        SS->Coefficients(A1, A2, A3, B1, B2, B3, C1, C2, C3, D);
+
+
+        // Get bounds of the basis surface
+        Standard_Real aSUMin, aSUMax, aSVMin, aSVMax;
+        aSurf->Bounds(aSUMin, aSUMax, aSVMin, aSVMax);
+
+        Standard_Boolean isUPeriodic = aBAS.IsUPeriodic();
+        Standard_Real anUPeriod = isUPeriodic ? aBAS.UPeriod() : 0.0;
+        if (isUPeriodic) {
+            // Adjust face bounds to first period
+            Standard_Real aDelta = aFUMax - aFUMin;
+            aFUMin = Max(aSUMin, aFUMin + anUPeriod * Ceiling((aSUMin - aFUMin) / anUPeriod));
+            aFUMax = aFUMin + aDelta;
+        }
+
+        Standard_Boolean isVPeriodic = aBAS.IsVPeriodic();
+        Standard_Real aVPeriod = isVPeriodic ? aBAS.VPeriod() : 0.0;
+        if (isVPeriodic) {
+            // Adjust face bounds to first period
+            Standard_Real aDelta = aFVMax - aFVMin;
+            aFVMin = Max(aSVMin, aFVMin + aVPeriod * Ceiling((aSVMin - aFVMin) / aVPeriod));
+            aFVMax = aFVMin + aDelta;
+        }
+
+        // Enlarge the face
+        Standard_Real anURes = 0., aVRes = 0.;
+        if (theExtUMin || theExtUMax)
+            anURes = aBAS.UResolution(theExtVal);
+        if (theExtVMin || theExtVMax)
+            aVRes = aBAS.VResolution(theExtVal);
+
+        if (theExtUMin)
+            aFUMin = Max(aSUMin, aFUMin - anURes);
+        if (theExtUMax)
+            aFUMax = Min(isUPeriodic ? aFUMin + anUPeriod : aSUMax, aFUMax + anURes);
+        if (theExtVMin)
+            aFVMin = Max(aSVMin, aFVMin - aVRes);
+        if (theExtVMax)
+            aFVMax = Min(isVPeriodic ? aFVMin + aVPeriod : aSVMax, aFVMax + aVRes);
+
+        // Check if the periodic surface should become closed.
+        // In this case, use the basis surface with basis bounds.
+        const Standard_Real anEps = Precision::PConfusion();
+        if (isUPeriodic && Abs(aFUMax - aFUMin - anUPeriod) < anEps) {
+            aFUMin = aSUMin;
+            aFUMax = aSUMax;
+        }
+        if (isVPeriodic && Abs(aFVMax - aFVMin - aVPeriod) < anEps) {
+            aFVMin = aSVMin;
+            aFVMax = aSVMax;
+        }
+
+        aS = aSurf;
+    }
+    else {
+        // General case
+
+        Handle(Geom_BoundedSurface) aSB =
+            Handle(Geom_BoundedSurface)::DownCast(BRep_Tool::Surface(theF));
+        if (aSB.IsNull()) {
+            theFExtended = theF;
+            return;
+        }
+
+        // Get surfaces bounds
+        Standard_Real aSUMin, aSUMax, aSVMin, aSVMax;
+        aSB->Bounds(aSUMin, aSUMax, aSVMin, aSVMax);
+
+        Standard_Boolean isUClosed = aSB->IsUClosed();
+        Standard_Boolean isVClosed = aSB->IsVClosed();
+
+        // Check if the extension in necessary directions is done
+        Standard_Boolean isExtUMin = Standard_False, isExtUMax = Standard_False,
+                         isExtVMin = Standard_False, isExtVMax = Standard_False;
+
+        // UMin
+        if (theExtUMin && !isUClosed && !Precision::IsInfinite(aSUMin)) {
+            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_True, Standard_False);
+            isExtUMin = Standard_True;
+        }
+        // UMax
+        if (theExtUMax && !isUClosed && !Precision::IsInfinite(aSUMax)) {
+            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_True, Standard_True);
+            isExtUMax = Standard_True;
+        }
+        // VMin
+        if (theExtVMin && !isVClosed && !Precision::IsInfinite(aSVMax)) {
+            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_False, Standard_False);
+            isExtVMin = Standard_True;
+        }
+        // VMax
+        if (theExtVMax && !isVClosed && !Precision::IsInfinite(aSVMax)) {
+            GeomLib::ExtendSurfByLength(aSB, theExtVal, 1, Standard_False, Standard_True);
+            isExtVMax = Standard_True;
+        }
+
+        aS = aSB;
+
+        // Get new bounds
+        aS->Bounds(aSUMin, aSUMax, aSVMin, aSVMax);
+        if (isExtUMin)
+            aFUMin = aSUMin;
+        if (isExtUMax)
+            aFUMax = aSUMax;
+        if (isExtVMin)
+            aFVMin = aSVMin;
+        if (isExtVMax)
+            aFVMax = aSVMax;
+    }
+
+    BRepLib_MakeFace aMF(aS, aFUMin, aFUMax, aFVMin, aFVMax, aTol);
+    theFExtended = *(TopoDS_Face*)&aMF.Shape();
+    if (theF.Orientation() == TopAbs_REVERSED)
+        theFExtended.Reverse();
+    BRepAdaptor_Surface aTest(theFExtended);
+    GeomAbs_SurfaceType ttt=aTest.GetType();
+}
 
 namespace
 {
@@ -384,10 +732,12 @@ public://! @name Perform the operation 执行部分
                 return;
             }
 
-
             myHasAdjacentFaces = (aMFAdjacent.Extent() > 0);
             if (!myHasAdjacentFaces)
                 return;
+
+             TopTools_IndexedMapOfShape aMFAdjacentSimplified;
+            SimplifyElmentaryFaces(aMFAdjacent, aMFAdjacentSimplified);
 
             // Extend the adjacent faces keeping the connection to the original faces
             TopTools_IndexedDataMapOfShapeShape aFaceExtFaceMap;
@@ -496,8 +846,8 @@ private://! @name Private methods performing the operation
         Bnd_Box aFeatureBox;
         BRepBndLib::Add(myFeature, aFeatureBox);
 
-        const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
-        //        Standard_Real anExtLength = 2;
+       //const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
+        const Standard_Real anExtLength = 1;
 
         const Standard_Integer aNbFA = theMFAdjacent.Extent();
         Message_ProgressScope aPS(theRange, "Extending adjacent faces", aNbFA);
@@ -505,7 +855,7 @@ private://! @name Private methods performing the operation
             const TopoDS_Face& aF = TopoDS::Face(theMFAdjacent(i));
             // Extend the face
             TopoDS_Face aFExt;
-            BRepLib::ExtendFace(aF, anExtLength, Standard_True, Standard_True, Standard_True,
+            MyExtendFace(aF, anExtLength, Standard_True, Standard_True, Standard_True,
                                 Standard_True, aFExt);
             theFaceExtFaceMap.Add(aF, aFExt);
             myHistory->AddModified(aF, aFExt);
@@ -525,6 +875,8 @@ private://! @name Private methods performing the operation
         const Standard_Integer aNbF = theFaceExtFaceMap.Extent();
         for (Standard_Integer i = 1; i <= aNbF; ++i)
             aGFInter.AddArgument(theFaceExtFaceMap(i));
+        aGFInter.SetFuzzyValue(Torerlance);
+        //aGFInter.SetGlue(BOPAlgo_GlueShift);
 
         aGFInter.SetRunParallel(myRunParallel);
         // Intersection result
@@ -544,6 +896,9 @@ private://! @name Private methods performing the operation
 
 #ifdef CREATE_DEBUG_SHAPE
         myIntersectResult = anIntResult;
+        TopTools_IndexedMapOfShape aTestFaceMap;
+        TopExp::MapShapes(anIntResult, TopAbs_FACE, aTestFaceMap);
+        Standard_Integer iQty = aTestFaceMap.Extent();
         TopoDS_CompSolid compound;
         BRep_Builder builder;
         builder.MakeCompound(myTrimResult);
@@ -563,9 +918,11 @@ private://! @name Private methods performing the operation
         TopExp::MapShapes(myFeature, TopAbs_EDGE, aFeatureEdgesMap);
 
         Message_ProgressScope aPS(aPSOuter.Next(), "Trimming faces", aNbF);
+        int iWatch = 1;
         for (Standard_Integer i = 1; i <= aNbF && aPS.More(); ++i, aPS.Next()) {
             const TopoDS_Face& aFOriginal = TopoDS::Face(theFaceExtFaceMap.FindKey(i)); //原始相邻面
             const TopoDS_Face& aFExt = TopoDS::Face(theFaceExtFaceMap(i));  //延伸面
+            //if (i == iWatch)
             TrimFace(aFExt, aFOriginal, aFeatureEdgesMap, anEFExtMap, aGFInter);
         }
     }
@@ -578,13 +935,35 @@ private://! @name Private methods performing the operation
                   const TopTools_IndexedDataMapOfShapeListOfShape& theEFExtMap, //延伸面相交后的边和面
                   BOPAlgo_Builder& theGFInter)  //相交运算构造器
     { 
+
         // Map all edges of the extended face, to filter the result of trim
         // from the faces containing these edges
+#ifdef FC_DEBUG
+        App::Document *pDoc=App::GetApplication().getActiveDocument();
+        std::vector<App::DocumentObject*> objs =   pDoc->getObjectsOfType(Part::Feature::getClassTypeId());
+        for (std::vector<App::DocumentObject*>::iterator it = objs.begin(); it != objs.end();
+             ++it) {
+            const TopoDS_Shape& shape = static_cast<Part::Feature*>(*it)->Shape.getValue();
+            if (shape.IsNull())
+                continue;
+            TopAbs_ShapeEnum enshape = shape.ShapeType();
+
+            if (shape.ShapeType() != TopAbs_FACE)
+                continue;
+            const char* sName = (*it)->Label.getValue();
+        }
+
+
+
+#endif// FC_DEBUG 
+
+
         TopTools_MapOfShape aMExtEdges; //延伸面的边
         TopExp_Explorer anExpE(theFExt, TopAbs_EDGE);
         for (; anExpE.More(); anExpE.Next()) {
             const TopoDS_Edge& aE = TopoDS::Edge(anExpE.Current());
-            // skip degenerated and seam edges 去除一些退化和自交的边，这种情况在面存在一些凹边界的情况下会出现
+            // Degenerated 参考笔记Degenerated edges
+            // CLosed 表示这些边可能是一些内轮廓
             if (BRep_Tool::Degenerated(aE) || BRep_Tool::IsClosed(aE, theFExt))
                 continue;
             TopTools_ListOfShape aLEIm; //边 aE 在面合并后的边，可能会对应多条或者没有。 
@@ -605,18 +984,20 @@ private://! @name Private methods performing the operation
         TopTools_ListOfShape anExtSplits; //剪切后的面
         TakeModified(theFExt, theGFInter, anExtSplits);
         aGFTrim.SetArguments(anExtSplits);
+        aGFTrim.SetFuzzyValue(Torerlance);
 
-        // Add edges of the original faces（是不是应该为Edge？)
-        //加入原来模型的边，不过要排除
-        TopTools_MapOfShape aMEdgesToCheckOri;//原来模型的边,排除了被移除特征的边
+        // Add edges of the original faces
+        //加入原来模型的边，不过要排除被移除特征的边
+        TopTools_MapOfShape aMEdgesToCheckOri;
         anExpE.Init(theFOriginal, TopAbs_EDGE);
         for (; anExpE.More(); anExpE.Next()) {
             const TopoDS_Edge& aE = TopoDS::Edge(anExpE.Current());
             if (!theFeatureEdgesMap.Contains(aE)) {
                 aGFTrim.AddArgument(aE);
                 if (!BRep_Tool::Degenerated(aE) && !BRep_Tool::IsClosed(aE, theFOriginal)) {
-                    if (!aMEdgesToCheckOri.Add(aE))
-                        aMEdgesToCheckOri.Remove(aE);
+                    aMEdgesToCheckOri.Add(aE);
+                    //if (!aMEdgesToCheckOri.Add(aE)) 
+                    //    aMEdgesToCheckOri.Remove(aE);
                 }
             }
         }
@@ -625,6 +1006,7 @@ private://! @name Private methods performing the operation
         aGFTrim.SetGlue(BOPAlgo_GlueShift);  //去掉重叠面
         aGFTrim.SetRunParallel(myRunParallel);
         aGFTrim.SetNonDestructive(Standard_True);
+        aGFTrim.SetFuzzyValue(Torerlance);
 
         aGFTrim.Perform();
         if (aGFTrim.HasErrors())
@@ -638,10 +1020,11 @@ private://! @name Private methods performing the operation
 
         //筛选出二次剪裁后的面，这种面应该是没有一条边属于原来的延伸面
         TopExp_Explorer anExpF(aSplits, TopAbs_FACE);
+        static int index = 0;
         for (; anExpF.More(); anExpF.Next()) {
             const TopoDS_Shape& aSp = anExpF.Current();//二次剪裁后的面
             #ifdef CREATE_DEBUG_SHAPE
-                        BRep_Builder().Add(myTrimResult, aSp);
+                BRep_Builder().Add(myTrimResult, aSp);
             #endif
 
             anExpE.Init(aSp, TopAbs_EDGE);//二次剪裁后的面的边
@@ -652,70 +1035,70 @@ private://! @name Private methods performing the operation
             if (!anExpE.More()) {
                 aLFTrimmed.Append(aSp);
                 #ifdef CREATE_DEBUG_SHAPE
-                BRep_Builder().Add(myFinalFaces, aSp);
+                    BRep_Builder().Add(myFinalFaces, aSp);
                 #endif
             }
         }
 
         //这部分是不是对于删除圆角不需要，应该不存在分为多个，或者拓扑大的变化
-        if (aLFTrimmed.Extent() > 1) {
-            // Chose the correct faces - the ones that contains edges with proper
-            // bi-normal direction
-            TopTools_IndexedDataMapOfShapeListOfShape anEFMap; //所有被二次剪裁的面边关系
-            TopTools_ListIteratorOfListOfShape itLF(aLFTrimmed);
-            for (; itLF.More(); itLF.Next())
-                TopExp::MapShapesAndAncestors(itLF.Value(), TopAbs_EDGE, TopAbs_FACE, anEFMap);
+        //if (aLFTrimmed.Extent() > 1) {
+        //    // Chose the correct faces - the ones that contains edges with proper
+        //    // bi-normal direction
+        //    TopTools_IndexedDataMapOfShapeListOfShape anEFMap; //所有被二次剪裁的面边关系
+        //    TopTools_ListIteratorOfListOfShape itLF(aLFTrimmed);
+        //    for (; itLF.More(); itLF.Next())
+        //        TopExp::MapShapesAndAncestors(itLF.Value(), TopAbs_EDGE, TopAbs_FACE, anEFMap);
 
-            // Check edges orientations
-            TopTools_MapOfShape aFacesToAvoid, aValidFaces;
-            FindExtraShapes(anEFMap, aMEdgesToCheckOri, aGFTrim, aFacesToAvoid, &aValidFaces);
+        //    // Check edges orientations
+        //    TopTools_MapOfShape aFacesToAvoid, aValidFaces;
+        //    FindExtraShapes(anEFMap, aMEdgesToCheckOri, aGFTrim, aFacesToAvoid, &aValidFaces);
 
-            if (aLFTrimmed.Extent() - aFacesToAvoid.Extent() > 1) {
-                // It is possible that the splits are forming the different blocks.
-                // Take only those containing the valid faces.
-                TopoDS_Compound aCF;
-                BRep_Builder().MakeCompound(aCF);
-                itLF.Initialize(aLFTrimmed);
-                for (; itLF.More(); itLF.Next()) {
-                    if (!aFacesToAvoid.Contains(itLF.Value()))
-                        BRep_Builder().Add(aCF, itLF.Value());
-                }
+        //    if (aLFTrimmed.Extent() - aFacesToAvoid.Extent() > 1) {
+        //        // It is possible that the splits are forming the different blocks.
+        //        // Take only those containing the valid faces.
+        //        TopoDS_Compound aCF;
+        //        BRep_Builder().MakeCompound(aCF);
+        //        itLF.Initialize(aLFTrimmed);
+        //        for (; itLF.More(); itLF.Next()) {
+        //            if (!aFacesToAvoid.Contains(itLF.Value()))
+        //                BRep_Builder().Add(aCF, itLF.Value());
+        //        }
 
-                TopTools_ListOfShape aLCB;
-                BOPTools_AlgoTools::MakeConnexityBlocks(aCF, TopAbs_EDGE, TopAbs_FACE, aLCB);
-                if (aLCB.Extent() > 1) {
-                    TopTools_ListIteratorOfListOfShape itLCB(aLCB);
-                    for (; itLCB.More(); itLCB.Next()) {
-                        // Check if the block contains any valid faces
-                        const TopoDS_Shape& aCB = itLCB.Value();
-                        TopoDS_Iterator itF(aCB);
-                        for (; itF.More(); itF.Next()) {
-                            if (aValidFaces.Contains(itF.Value()))
-                                break;
-                        }
-                        if (!itF.More()) {
-                            // Invalid block
-                            for (itF.Initialize(aCB); itF.More(); itF.Next())
-                                aFacesToAvoid.Add(itF.Value());
-                        }
-                    }
-                }
-            }
+        //        TopTools_ListOfShape aLCB;
+        //        BOPTools_AlgoTools::MakeConnexityBlocks(aCF, TopAbs_EDGE, TopAbs_FACE, aLCB);
+        //        if (aLCB.Extent() > 1) {
+        //            TopTools_ListIteratorOfListOfShape itLCB(aLCB);
+        //            for (; itLCB.More(); itLCB.Next()) {
+        //                // Check if the block contains any valid faces
+        //                const TopoDS_Shape& aCB = itLCB.Value();
+        //                TopoDS_Iterator itF(aCB);
+        //                for (; itF.More(); itF.Next()) {
+        //                    if (aValidFaces.Contains(itF.Value()))
+        //                        break;
+        //                }
+        //                if (!itF.More()) {
+        //                    // Invalid block
+        //                    for (itF.Initialize(aCB); itF.More(); itF.Next())
+        //                        aFacesToAvoid.Add(itF.Value());
+        //                }
+        //            }
+        //        }
+        //    }
 
-            itLF.Initialize(aLFTrimmed);
-            for (; itLF.More();) {
-                if (aFacesToAvoid.Contains(itLF.Value()))
-                    aLFTrimmed.Remove(itLF);
-                else
-                    itLF.Next();
-            }
-        }
-        else if (aLFTrimmed.IsEmpty()) {
-            // Use all splits, including those having the bounds of extended face
-            anExpF.ReInit();
-            for (; anExpF.More(); anExpF.Next())
-                aLFTrimmed.Append(anExpF.Current());
-        }
+        //    itLF.Initialize(aLFTrimmed);
+        //    for (; itLF.More();) {
+        //        if (aFacesToAvoid.Contains(itLF.Value()))
+        //            aLFTrimmed.Remove(itLF);
+        //        else
+        //            itLF.Next();
+        //    }
+        //}
+        //else if (aLFTrimmed.IsEmpty()) {
+        //    // Use all splits, including those having the bounds of extended face
+        //    anExpF.ReInit();
+        //    for (; anExpF.More(); anExpF.Next())
+        //        aLFTrimmed.Append(anExpF.Current());
+        //}
 
         if (aLFTrimmed.Extent()) {
             // Remove the internal edges and vertices from the faces
@@ -1667,5 +2050,35 @@ void FindSolid(const TopoDS_Shape& theSolIn, const TopTools_ListOfShape& theSoli
                 }
             }
         }
+    }
+}
+
+
+void SimplifyElmentaryFaces(
+    const TopTools_IndexedMapOfShape& theMFAdjacented,
+    TopTools_IndexedMapOfShape &aMFAdjacentSimplified)
+{
+    BRep_Builder builder;
+    TopoDS_Compound oldFaces;
+    builder.MakeCompound(oldFaces);
+    const Standard_Integer aNbFA = theMFAdjacented.Extent();
+    for (Standard_Integer i = 1; i <= aNbFA; ++i) {
+        BRep_Builder().Add(oldFaces, theMFAdjacented(i));
+    }
+
+    ShapeUpgrade_UnifySameDomain aSDTool;
+    aSDTool.Initialize(oldFaces, Standard_True, Standard_True);
+    // Do not allow producing internal edges
+    aSDTool.AllowInternalEdges(Standard_False);
+    //// Avoid removal of the input edges and vertices
+    double dTor = Precision::Angular();
+    aSDTool.SetAngularTolerance(1E-5);
+    //// Perform unification
+    aSDTool.Build();
+    TopExp_Explorer anExpF(aSDTool.Shape(), TopAbs_FACE);
+    for (; anExpF.More(); anExpF.Next()) {
+
+        const TopoDS_Shape& aF = anExpF.Current();
+        aMFAdjacentSimplified.Add(anExpF.Value());
     }
 }
