@@ -203,12 +203,10 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      }   
       else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {//环形曲面
          Handle(Geom_ToroidalSurface) SS = Handle(Geom_ToroidalSurface)::DownCast(S);
-          radius = SS->MinorRadius();//取最大曲率         
+         radius = SS->MinorRadius();//取最大曲率         
      }
       else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
-          Handle(Geom_BSplineSurface) SS = Handle(Geom_BSplineSurface)::DownCast(S);                         
-          TopoDS_Face face = OCCface;
-          BRepAdaptor_Surface adapt(face);
+          BRepAdaptor_Surface adapt(OCCface);
           double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
           double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
           BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());
