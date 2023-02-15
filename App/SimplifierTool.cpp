@@ -4,6 +4,9 @@
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <cmath>
 #include <iostream>
+#include <BRepAdaptor_Surface.hxx>
+#include <BRepLProp_SLProps.hxx>
+
 #endif
 #include <Base/BoundBox.h>
 
@@ -200,16 +203,22 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      }   
       else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {//环形曲面
          Handle(Geom_ToroidalSurface) SS = Handle(Geom_ToroidalSurface)::DownCast(S);
-          radius = SS->MajorRadius();         
+         radius = SS->MinorRadius();//取最大曲率         
      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
+          BRepAdaptor_Surface adapt(OCCface);
+          double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
+          double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
+          BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());
+          radius = 1 / prop.MaxCurvature();           
+      }
      else {
          auto desc = S->get_type_descriptor();        
          QString text;
          text = QString::fromLatin1(
                  "No provide relevant methond for input face type,the input face type is (%1)")
                  .arg(QString::fromLatin1(desc->get_type_name()));
-         QMessageBox::about(nullptr, QString::fromLatin1("Error Tip"),text);
-       
+         QMessageBox::about(nullptr, QString::fromLatin1("Error Tip"),text);       
          return false;
      }
      return true;    

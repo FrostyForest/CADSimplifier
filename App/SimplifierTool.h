@@ -10,9 +10,6 @@
 #include <Gui/SelectionObject.h>
 
 #include <Base/Exception.h>
-
-
-
 #include"TopoDS.hxx"
 #include"TopoDS_Vertex.hxx"
 #include <TopoDS_Edge.hxx>
@@ -84,5 +81,4 @@ public:
     TopoDS_Shape ShapeOfTrimResult;
 #endif
 };
-
 }// namespace CADSimplifier
