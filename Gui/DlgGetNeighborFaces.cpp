@@ -474,7 +474,7 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
         std::vector<TopoDS_Shape> adjacentFacesOfNoPlane;
         d->face_ids.clear();
         d->face_ids =
-            tool->getAllNeighborFacesIdOfNoPlane(selectedFaces, allFace, adjacentFacesOfNoPlane);           
+            tool->getAllNeighborFacesIdOfNoPlane(selectedFaces, allFace, adjacentFacesOfNoPlane,2.0,0.0);           
         QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->treeView->model());
         model->removeRows(0, model->rowCount());
         model->insertRows(0, d->face_ids.size());

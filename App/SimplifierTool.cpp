@@ -200,19 +200,21 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      else if (S->IsKind(STANDARD_TYPE(Geom_ConicalSurface))) {//圆锥面
          Handle(Geom_ConicalSurface) SS = Handle(Geom_ConicalSurface)::DownCast(S);            
          radius = SS->RefRadius();         
-     }   
-      else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {//环形曲面 类似游泳圈
+     }  
+     else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {//环形曲面 类似游泳圈
          Handle(Geom_ToroidalSurface) SS = Handle(Geom_ToroidalSurface)::DownCast(S);
-          radius = SS->MinorRadius();//取最小半径，即最大曲率         
+         radius = SS->MinorRadius();//取最小半径，即最大曲率         
      }
-      else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
-          Handle(Geom_BSplineSurface) SS = Handle(Geom_BSplineSurface)::DownCast(S);                         
-          TopoDS_Face face = OCCface;
-          BRepAdaptor_Surface adapt(face);
-          double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
-          double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
-          BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());//分为u，v2个垂直方向， 求的最高阶导和线性容差
-          radius = 1 / prop.MaxCurvature();           
+     else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
+          radius =  samplingGetRadiusOfFreeSurface(OCCface, 4);//3*3 9点采样      
+          //求中间点曲率半径
+          //Handle(Geom_BSplineSurface) SS = Handle(Geom_BSplineSurface)::DownCast(S);                         
+          //TopoDS_Face face = OCCface;
+          //BRepAdaptor_Surface adapt(face);
+          //double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
+          //double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
+          //BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());//分为u，v2个垂直方向， 求的最高阶导和线性容差
+          //radius = 1 / prop.MaxCurvature();           
       }
 #ifdef FC_DEBUG
       else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {//偏移面  沿着平面的法向方向移动一定的距离得到的新的平面，即原来平面的一份深拷贝
@@ -233,15 +235,54 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
       }
 #endif//FC_DEBUG
      else {
-         auto desc = S->get_type_descriptor();        
-         QString text;
+         //radius = samplingGetRadiusOfFreeSurface(OCCface, 1e10);
+         //return true;
+
+         auto desc = S->get_type_descriptor(); 
+         /*QString text;        
          text = QString::fromLatin1(
                  "No provide relevant methond for input face type,the input face type is (%1)")
                  .arg(QString::fromLatin1(desc->get_type_name()));
-         QMessageBox::about(nullptr, QString::fromLatin1("Error Tip"),text);       
+         QMessageBox::about(nullptr, QString::fromLatin1("Error Tip"),text);  */ 
+
+         //Standard_OStream& theStream = std::cout; <<
+         std::ostringstream info;
+         desc->Print(info);  
+         std::string sp = info.str();
+         QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
          return false;
      }
      return true;    
+ }
+
+ double CADSimplifier::SimplifierTool::samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n)
+ {    
+     Handle(Geom_Surface) S = BRep_Tool::Surface(face);
+     Standard_Real U1,U2,V1,V2;
+     S->Bounds(U1,U2,V1,V2);
+     if (U1 > U2) std::swap(U1, U2);
+     if (V1 > V2) std::swap(V1, V2);
+     Standard_Real uLength = std::abs(U1 - U2);
+     Standard_Real vLength = std::abs(V1 - V2);
+     BRepAdaptor_Surface adapt(face);
+     std::vector<double> vecRadius;
+     for (int i = 1; i < n - 1; ++i) {
+         double u = U1 + i * uLength / n;
+         for (int j = 1; j < n - 1; ++j) {
+             double v = V1 + j * vLength / n;
+             BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());              
+             vecRadius.emplace_back(1 / prop.MaxCurvature());
+         }
+     }
+     double sum = std::accumulate(vecRadius.begin(), vecRadius.end(), 0.0);
+     double radius = sum / vecRadius.size();
+     //求中间点的
+     //BRepAdaptor_Surface adapt(face);
+     //double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
+     //double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
+     //BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());//分为u，v2个垂直方向， 求的最高阶导和线性容差
+     //double radius = 1 / prop.MaxCurvature();                  
+     return radius; 
  }
 
  void CADSimplifier::SimplifierTool::getAllFacesOfASolidofDocument(const QByteArray& featureName,
@@ -312,7 +353,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
 
  std::vector<int> CADSimplifier::SimplifierTool::getAllNeighborFacesIdOfNoPlane(
      const std::vector<TopoDS_Shape>& selectedFaces, const TopTools_IndexedMapOfShape& allFace,
-     std::vector<TopoDS_Shape>& destFaces)
+     std::vector<TopoDS_Shape>& destFaces, double maxRadius, double minRadius)
  {
      std::vector<int> NeighborFacesIDSet;
      for (auto aSelectedface : selectedFaces) {
@@ -321,10 +362,18 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
              TopoDS_Face aFace = TopoDS::Face(allFace.FindKey(i));
              if (this->isHaveCommonVertice(aFace, selectedFace)) {
                  Handle(Geom_Surface) S = BRep_Tool::Surface(aFace);
-                 if (!(S->IsKind(STANDARD_TYPE(Geom_Plane)))) {
-                     int id = allFace.FindIndex(aFace);
-                     destFaces.emplace_back(aFace);
-                     NeighborFacesIDSet.emplace_back(id);
+                 if (!(S->IsKind(STANDARD_TYPE(Geom_Plane)))) {//平面去除      
+                         /*
+                         BRepAdaptor_Surface adapt(aFace);
+                         double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
+                         double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
+                         BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());
+                         double radius = 1 / prop.MaxCurvature();*/
+                         double radius = this->samplingGetRadiusOfFreeSurface(aFace, 4);
+                         if (radius > maxRadius || radius < minRadius) continue;//曲率半径不在范围之内                                       
+                         int id = allFace.FindIndex(aFace);
+                         destFaces.emplace_back(aFace);
+                         NeighborFacesIDSet.emplace_back(id);
                  }
              }
          }
