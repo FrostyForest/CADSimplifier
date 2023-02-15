@@ -40,7 +40,7 @@
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
-
+#include "UtilExtendSurface.h"
 
  #ifdef FC_DEBUG
     #define CREATE_DEBUG_SHAPE
@@ -384,7 +384,6 @@ public://! @name Perform the operation 执行部分
                 return;
             }
 
-
             myHasAdjacentFaces = (aMFAdjacent.Extent() > 0);
             if (!myHasAdjacentFaces)
                 return;
@@ -496,8 +495,8 @@ private://! @name Private methods performing the operation
         Bnd_Box aFeatureBox;
         BRepBndLib::Add(myFeature, aFeatureBox);
 
-        const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
-        //        Standard_Real anExtLength = 2;
+        //const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
+        const Standard_Real anExtLength = 30;
 
         const Standard_Integer aNbFA = theMFAdjacent.Extent();
         Message_ProgressScope aPS(theRange, "Extending adjacent faces", aNbFA);
@@ -505,8 +504,9 @@ private://! @name Private methods performing the operation
             const TopoDS_Face& aF = TopoDS::Face(theMFAdjacent(i));
             // Extend the face
             TopoDS_Face aFExt;
-            BRepLib::ExtendFace(aF, anExtLength, Standard_True, Standard_True, Standard_True,
-                                Standard_True, aFExt);
+            Standard_Boolean bExtU , bExtV;
+            DetermineExtendDirection(aF, bExtU, bExtV);
+            BRepLib::ExtendFace(aF, anExtLength, bExtU, bExtU, bExtV, bExtV, aFExt);
             theFaceExtFaceMap.Add(aF, aFExt);
             myHistory->AddModified(aF, aFExt);
         }
@@ -526,6 +526,7 @@ private://! @name Private methods performing the operation
         for (Standard_Integer i = 1; i <= aNbF; ++i)
             aGFInter.AddArgument(theFaceExtFaceMap(i));
 
+        aGFInter.SetFuzzyValue(0.01);
         aGFInter.SetRunParallel(myRunParallel);
         // Intersection result
         TopoDS_Shape anIntResult;
@@ -600,6 +601,7 @@ private://! @name Private methods performing the operation
         // Trimming tool
         //把互相剪裁过的延伸面再和原来的实体的边进行剪裁
         BOPAlgo_Builder aGFTrim;
+        aGFTrim.SetFuzzyValue(0.01);
 
         // Get the splits of the face and add them for trimming
         TopTools_ListOfShape anExtSplits; //剪切后的面
