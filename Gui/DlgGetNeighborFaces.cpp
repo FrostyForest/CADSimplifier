@@ -494,7 +494,12 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
             model->setData(model->index(index, 0),QVariant(tr("Face%1").arg(*it)));               
             model->setData(model->index(index, 0), QVariant(*it), Qt::UserRole);
             double radius = 0.0;
-            tool->getFaceGemoInfo(TopoDS::Face(adjacentFacesOfNoPlane.at(index)), radius);
+            bool flag = tool->getFaceGemoInfo(TopoDS::Face(adjacentFacesOfNoPlane.at(index)), radius);
+            if (!flag) {
+                QString text;
+                text = QString::fromLatin1("get the curvature radius parameter of input face failed");
+                QMessageBox::warning(this, QString::fromLatin1("Error Tip"), text);           
+            }
             model->setData(model->index(index, 1),
                 QVariant::fromValue<Base::Quantity>(Base::Quantity(radius, Base::Unit::Length)));
             model->setData(model->index(index, 2),
