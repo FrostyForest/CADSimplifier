@@ -81,5 +81,4 @@ public:
     TopoDS_Shape ShapeOfTrimResult;
 #endif
 };
-
 }// namespace CADSimplifier
