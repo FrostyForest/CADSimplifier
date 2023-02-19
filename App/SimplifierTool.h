@@ -63,8 +63,6 @@ public:
 	std::vector<int> getAllNeighborFacesIdOfNoPlane(const std::vector<TopoDS_Shape>& selectedFaces,
         const TopTools_IndexedMapOfShape& allFace,std::vector<TopoDS_Shape>& destFaces);
   
-
-
     //help
     bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
     bool getFaceGemoInfo(const TopoDS_Face& OCCface,double& radius, ...);

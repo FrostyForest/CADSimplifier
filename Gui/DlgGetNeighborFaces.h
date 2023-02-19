@@ -67,20 +67,14 @@ public:
     DlgGetNeighborFaces(ShapeType type,Part::FilletBase*,QWidget* parent = nullptr,Qt::WindowFlags fl = Qt::WindowFlags());
     ~DlgGetNeighborFaces() override;
     bool accept();
-
 protected:
-    bool eventFilter(QObject* target, QEvent* event);//事件过滤器
+    bool eventFilter(QObject* target, QEvent* event);
     void findShapes();
-    //void setupGetNeighborFaces(const std::vector<App::DocumentObject*>&);
     void changeEvent(QEvent* e) override;
     virtual const char* getShapeType() const;
 private:
     void onSelectionChanged(const Gui::SelectionChanges& msg) override;
     void onSelectShape(const QString& shapeTypeName, const QString& subelement, int type);
-    //void onSelectFace(const QString& subelement, int type);
-    //void onSelectEdge(const QString& subelement, int type);
-    //void onSelectEdgesOfFace(const QString& subelement, int type);
-    //void SelectionFaceChanged(const QItemSelection& selected, const QItemSelection& deselected);
     void onDeleteObject(const App::DocumentObject&);
     void onDeleteDocument(const App::Document&);
 private Q_SLOTS:
@@ -90,29 +84,17 @@ private Q_SLOTS:
 
     void on_selectAllButton_clicked();
     void on_selectNoneButton_clicked();
-
+    void on_selectFitButton_clicked();
 
     void on_filletType_activated(int);
     void on_filletStartRadius_valueChanged(const Base::Quantity&);
     void on_filletEndRadius_valueChanged(const Base::Quantity&);
-    void toggleCheckState(const QModelIndex&); //checkbox选中时要同步的view操作
+    void toggleCheckState(const QModelIndex&);
     void onHighlightFaces();
-
-
-    void on_selectFitButton_clicked();
-    //void on_minRadius_selectionChanged();//程序内部修改也会自动触发  
-    //void on_minRadius_textEdited();//单个字符改变就触发 程序内部修改不会自动触发   
-    //void on_minRadiusLineEdit_returnPressed();//lineedit回车按下触发事件
-
-    //void on_maxRadius_textEdited();
-
- 
 private:
     std::unique_ptr<Ui_DlgGetNeighborFaces> ui;
-    //std::unique_ptr < QStandardItemModel>mModel;
-
     class Private;
-    std::unique_ptr<Private> d;
+    std::unique_ptr<Private> d;//impl模式
     std::unique_ptr<CADSimplifier::SimplifierTool> tool;
 };
 

@@ -132,13 +132,10 @@ bool CADSimplifier::SimplifierTool::fixShape(
             tpsh.setShape(myShape);
             flag = tpsh.fix(precision, mintol, maxtol);
             if (!flag)
-                return false;
-            
+                return false;          
         }
-
     }
-    return flag;
-   
+    return flag;  
 }
 
 void SimplifierTool::Restore(Base::XMLReader& reader)
@@ -164,8 +161,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
  
  
  
- bool CADSimplifier::SimplifierTool::isHaveCommonVertice(const TopoDS_Face& face,
-                                                      const TopoDS_Face& face1)
+ bool CADSimplifier::SimplifierTool::isHaveCommonVertice(const TopoDS_Face& face,const TopoDS_Face& face1)
  {
      if (face1.IsEqual(face))
          return false;
@@ -222,7 +218,6 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
          return false;
      }
-
      if (radius < 0)radius = Abs(radius);
      return true;    
  }
@@ -330,15 +325,13 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
              if (S->IsKind(STANDARD_TYPE(Geom_Plane))) continue;              
              auto it = std::find(selectedFaces.begin(), selectedFaces.end(), aFace);
              if (it != selectedFaces.end()) continue;
-             if (this->isHaveCommonVertice(aFace, selectedFace)) {  			 
-                  {                                                                                                                                   
-                         int id = allFace.FindIndex(aFace);
-                         auto it = std::find(NeighborFacesIDSet.begin(), NeighborFacesIDSet.end(), id);
-                         if (it == NeighborFacesIDSet.end()) {
-                             NeighborFacesIDSet.emplace_back(id);
-                             destFaces.emplace_back(aFace);
-                         }                         
-                 }
+             if (this->isHaveCommonVertice(aFace, selectedFace)) {  
+                 int id = allFace.FindIndex(aFace);
+                 auto it = std::find(NeighborFacesIDSet.begin(), NeighborFacesIDSet.end(), id);
+                 if (it == NeighborFacesIDSet.end()) {
+                     NeighborFacesIDSet.emplace_back(id);
+                     destFaces.emplace_back(aFace);                                                                                                                                                   
+                }                                       
              }
          }
      }
