@@ -42,7 +42,6 @@ class FilletRadiusModel: public QStandardItemModel
 
 public:
     explicit FilletRadiusModel(QObject* parent = nullptr);
-
     Qt::ItemFlags flags(const QModelIndex& index) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QVariant data(const QModelIndex&, int role = Qt::DisplayRole) const override;
@@ -70,6 +69,7 @@ public:
     bool accept();
 
 protected:
+    bool eventFilter(QObject* target, QEvent* event);//事件过滤器
     void findShapes();
     //void setupGetNeighborFaces(const std::vector<App::DocumentObject*>&);
     void changeEvent(QEvent* e) override;
@@ -87,18 +87,29 @@ private Q_SLOTS:
     void on_shapeObject_activated(int);
     void on_selectEdges_toggled(bool);
     void on_selectFaces_toggled(bool);
+
     void on_selectAllButton_clicked();
     void on_selectNoneButton_clicked();
+
+
     void on_filletType_activated(int);
     void on_filletStartRadius_valueChanged(const Base::Quantity&);
     void on_filletEndRadius_valueChanged(const Base::Quantity&);
-    void toggleCheckState(const QModelIndex&);
+    void toggleCheckState(const QModelIndex&); //checkbox选中时要同步的view操作
     void onHighlightFaces();
+
+
+    void on_selectFitButton_clicked();
+    //void on_minRadius_selectionChanged();//程序内部修改也会自动触发  
+    //void on_minRadius_textEdited();//单个字符改变就触发 程序内部修改不会自动触发   
+    //void on_minRadiusLineEdit_returnPressed();//lineedit回车按下触发事件
+
+    //void on_maxRadius_textEdited();
 
  
 private:
     std::unique_ptr<Ui_DlgGetNeighborFaces> ui;
-    std::unique_ptr < QStandardItemModel>mModel;
+    //std::unique_ptr < QStandardItemModel>mModel;
 
     class Private;
     std::unique_ptr<Private> d;

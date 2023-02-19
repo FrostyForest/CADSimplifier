@@ -114,8 +114,8 @@ bool CADSimplifier::SimplifierTool::fixShape(
     std::vector<TopoDS_Shape> selectedFaces;
     getSelectedFaces(selectedFaces);*/  
 
-    ShapeFix_Shape fix;
-    fix.Perform();
+    /*ShapeFix_Shape fix;
+    fix.Perform();*/
 
 
     TopoDS_Shape myShape;
@@ -175,7 +175,8 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      for (Ex.Init(face, TopAbs_EDGE); Ex.More(); Ex.Next()) {
          TopExp::Vertices(TopoDS::Edge(Ex.Current()), V1, V2);
          for (Ex1.Init(face1, TopAbs_EDGE); Ex1.More(); Ex1.Next()) {           
-             TopExp::Vertices(TopoDS::Edge(Ex1.Current()), V3, V4);
+             TopExp::Vertices(TopoDS::Edge(Ex1.Current()), V3, V4);             
+             //if (V1.IsEqual(V3) || V2.IsEqual(V4) || V1.IsEqual(V4) || V2.IsEqual(V3)) {//Orientatin方向不同
              if (V1.IsSame(V3) || V2.IsSame(V4) || V1.IsSame(V4) || V2.IsSame(V3)) {
                  return true;
              }
@@ -186,7 +187,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      }
      return false;
  }
- bool CADSimplifier::SimplifierTool::getFaceGemoInfo(const TopoDS_Face& OCCface, double& radius,...)
+ bool CADSimplifier::SimplifierTool::getFaceGemoInfo(const TopoDS_Face& OCCface,double& radius,...)
  {     
      Handle(Geom_Surface) S = BRep_Tool::Surface(OCCface);
      if (S->IsKind(STANDARD_TYPE(Geom_CylindricalSurface))) {//圆柱面
@@ -235,9 +236,11 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
       }
 #endif//FC_DEBUG
      else {
-         //radius = samplingGetRadiusOfFreeSurface(OCCface, 1e10);
-         //return true;
-
+#ifdef FC_DEBUG
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2);
+         if (radius < 0) radius = Abs(radius);
+         return true;
+#endif
          auto desc = S->get_type_descriptor(); 
          /*QString text;        
          text = QString::fromLatin1(
@@ -252,6 +255,8 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
          return false;
      }
+
+     if (radius < 0)radius = Abs(radius);
      return true;    
  }
 
@@ -353,27 +358,31 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
 
  std::vector<int> CADSimplifier::SimplifierTool::getAllNeighborFacesIdOfNoPlane(
      const std::vector<TopoDS_Shape>& selectedFaces, const TopTools_IndexedMapOfShape& allFace,
-     std::vector<TopoDS_Shape>& destFaces, double maxRadius, double minRadius)
+     std::vector<TopoDS_Shape>& destFaces)
  {
+     //std::map<int, int> NeighborFacesIDSet; //key为id，value为index
+     //int index = 0;
      std::vector<int> NeighborFacesIDSet;
      for (auto aSelectedface : selectedFaces) {
          TopoDS_Face selectedFace = TopoDS::Face(aSelectedface);
          for (Standard_Integer i = 1; i <= allFace.Extent(); ++i) {
              TopoDS_Face aFace = TopoDS::Face(allFace.FindKey(i));
-             if (this->isHaveCommonVertice(aFace, selectedFace)) {
-                 Handle(Geom_Surface) S = BRep_Tool::Surface(aFace);
-                 if (!(S->IsKind(STANDARD_TYPE(Geom_Plane)))) {//平面去除      
-                         /*
-                         BRepAdaptor_Surface adapt(aFace);
-                         double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
-                         double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
-                         BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());
-                         double radius = 1 / prop.MaxCurvature();*/
-                         double radius = this->samplingGetRadiusOfFreeSurface(aFace, 4);
-                         if (radius > maxRadius || radius < minRadius) continue;//曲率半径不在范围之内                                       
+             Handle(Geom_Surface) S = BRep_Tool::Surface(aFace);
+             if (S->IsKind(STANDARD_TYPE(Geom_Plane))) continue;//平面去除   
+             //搜索比较范围要去除当前选中的所有面，否则会出现选择的为多个相邻的面时，造成互相添加进入比较范围
+             auto it = std::find(selectedFaces.begin(), selectedFaces.end(), aFace);
+             if (it != selectedFaces.end()) continue;
+             if (this->isHaveCommonVertice(aFace, selectedFace)) {                
+                  {                                                                                                           
+                         //选中的为互相相邻的面时候，要将得出的结果去重即求并集
                          int id = allFace.FindIndex(aFace);
-                         destFaces.emplace_back(aFace);
-                         NeighborFacesIDSet.emplace_back(id);
+                         auto it = std::find(NeighborFacesIDSet.begin(), NeighborFacesIDSet.end(), id);
+                         if (it == NeighborFacesIDSet.end()) {
+                             NeighborFacesIDSet.emplace_back(id);
+                             destFaces.emplace_back(aFace);
+                         }
+                         //NeighborFacesIDSet.emplace(id, index);
+                         //++index;
                  }
              }
          }

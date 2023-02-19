@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>466</width>
-    <height>331</height>
+    <width>1117</width>
+    <height>805</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -59,63 +59,7 @@
      <property name="title">
       <string>Fillet Parameter</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0" colspan="2">
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="title">
-         <string>Selection</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0" colspan="2">
-          <widget class="QRadioButton" name="selectEdges">
-           <property name="text">
-            <string>Select edges</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2" colspan="2">
-          <widget class="QRadioButton" name="selectFaces">
-           <property name="text">
-            <string>Select faces</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="selectAllButton">
-           <property name="text">
-            <string>All</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1" colspan="2">
-          <widget class="QPushButton" name="selectNoneButton">
-           <property name="text">
-            <string>None</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="3">
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>221</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </widget>
-      </item>
+     <layout class="QFormLayout" name="formLayout">
       <item row="1" column="0">
        <widget class="QLabel" name="labelfillet">
         <property name="text">
@@ -140,7 +84,7 @@
       <item row="2" column="0" colspan="2">
        <widget class="QTreeView" name="treeView"/>
       </item>
-      <item row="3" column="0" colspan="2">
+      <item row="3" column="0">
        <layout class="QHBoxLayout">
         <property name="spacing">
          <number>6</number>
@@ -165,27 +109,27 @@
          </widget>
         </item>
         <item>
-         <widget class="Gui::QuantitySpinBox" name="filletStartRadius">
+         <widget class="Gui::QuantitySpinBox" name="filletStartRadius" native="true">
           <property name="unit" stdset="0">
            <string notr="true">mm</string>
           </property>
-          <property name="singleStep">
+          <property name="singleStep" stdset="0">
            <double>0.100000000000000</double>
           </property>
-          <property name="value">
+          <property name="value" stdset="0">
            <double>1.000000000000000</double>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="Gui::QuantitySpinBox" name="filletEndRadius">
+         <widget class="Gui::QuantitySpinBox" name="filletEndRadius" native="true">
           <property name="unit" stdset="0">
            <string notr="true">mm</string>
           </property>
-          <property name="singleStep">
+          <property name="singleStep" stdset="0">
            <double>0.100000000000000</double>
           </property>
-          <property name="value">
+          <property name="value" stdset="0">
            <double>1.000000000000000</double>
           </property>
          </widget>
@@ -207,6 +151,140 @@
          </spacer>
         </item>
        </layout>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QGroupBox" name="groupBox_3">
+        <property name="title">
+         <string>Selection</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="lableRadiusRange">
+             <property name="text">
+              <string>Radius Range</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTextEdit" name="minRadius">
+             <property name="maximumSize">
+              <size>
+               <width>256</width>
+               <height>51</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">font: 20pt &quot;Microsoft YaHei UI&quot;;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="linkSymbol">
+             <property name="styleSheet">
+              <string notr="true">font: 20pt &quot;Microsoft YaHei UI&quot;;</string>
+             </property>
+             <property name="text">
+              <string>~</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTextEdit" name="maxRadius">
+             <property name="maximumSize">
+              <size>
+               <width>256</width>
+               <height>51</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">font: 20pt &quot;Microsoft YaHei UI&quot;;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>298</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QRadioButton" name="selectEdges">
+             <property name="text">
+              <string>Select edges</string>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="selectFaces">
+             <property name="text">
+              <string>Select faces</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="2" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QPushButton" name="selectAllButton">
+             <property name="text">
+              <string>All</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="selectNoneButton">
+             <property name="text">
+              <string>None</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="selectFitButton">
+             <property name="text">
+              <string>SelectFit</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>558</width>
+               <height>17</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
       </item>
      </layout>
     </widget>
