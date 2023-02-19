@@ -6,6 +6,7 @@
 #include <QLocale>
 #include <QMessageBox>
 #include <QTimer>
+#include <QKeyEvent>
 #include <QVBoxLayout>
 #include <algorithm>
 #include <climits>
@@ -211,7 +212,6 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     ui->filletEndRadius->setMinimum(0);
     ui->filletEndRadius->setUnit(Base::Unit::Length);
 
-
     d->object = nullptr;
     d->selection = new EdgeFaceSelection(d->object);
     Gui::Selection().addSelectionGate(d->selection);
@@ -224,7 +224,6 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
    
     // set tree view with three columns
     QStandardItemModel* model = new FilletRadiusModel(this);
-
     connect(model, SIGNAL(toggleCheckState(const QModelIndex&)), this,SLOT(toggleCheckState(const QModelIndex&)));
     model->insertColumns(0, 3);
 
@@ -249,9 +248,26 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     header->setSectionResizeMode(0, QHeaderView::Stretch);
     header->setDefaultAlignment(Qt::AlignLeft);
     header->setSectionsMovable(false);
-    //ui->filletType->setCurrentIndex(0);
+
+    ui->minRadius->insertPlainText(QString::fromLatin1("0"));
+    ui->maxRadius->insertPlainText(QString::fromLatin1("1"));
+    ui->minRadius->installEventFilter(this);
+    ui->maxRadius->installEventFilter(this);
+
     on_filletType_activated(0); 
     findShapes();
+    on_selectFitButton_clicked();
+
+    //隐藏
+    ui->selectFitButton->hide();
+    ui->selectFitButton->hide();
+    ui->selectEdges->hide();
+    ui->selectFaces->hide();
+    ui->labelfillet->hide();
+    ui->filletType->hide();
+    ui->labelRadius->hide();
+    ui->filletStartRadius->hide();  
+    ui->filletEndRadius->hide();
 }
 
 void DlgGetNeighborFaces::on_filletStartRadius_valueChanged(const Base::Quantity& radius)
@@ -455,8 +471,6 @@ void DlgGetNeighborFaces::onHighlightFaces()
     }
 }
 
-
-
 void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
 { 
     d->object = nullptr;           
@@ -473,37 +487,35 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
         d->object = docObj;
   
         //// get current selection and their sub-elements
-        //std::vector<Gui::SelectionObject> selObj = Gui::Selection().getSelectionEx(doc->getName());
-        //std::vector<Gui::SelectionObject>::iterator selIt =
-        //    std::find_if(selObj.begin(), selObj.end(), Private::SelectionObjectCompare(d->object));     
+        /*std::vector<Gui::SelectionObject> selObj = Gui::Selection().getSelectionEx(doc->getName());
+        std::vector<Gui::SelectionObject>::iterator selIt =
+            std::find_if(selObj.begin(), selObj.end(), Private::SelectionObjectCompare(d->object));*/     
         TopTools_IndexedMapOfShape allFace;
         tool->getAllFacesOfASolidofDocument(name, allFace);       
         std::vector<TopoDS_Shape> selectedFaces;
         tool->getSelectedFaces(selectedFaces);      
-        //去除当前选中的面              
         Gui::Selection().rmvSelection(doc->getName(),docObj->getNameInDocument());
-        std::vector<TopoDS_Shape> adjacentFacesOfNoPlane;
+        std::vector<TopoDS_Shape> adjacentFacesOfNoPlane; 
         d->face_ids.clear();
-        d->face_ids =
-            tool->getAllNeighborFacesIdOfNoPlane(selectedFaces, allFace, adjacentFacesOfNoPlane);           
+        d->face_ids = tool->getAllNeighborFacesIdOfNoPlane(selectedFaces, allFace, adjacentFacesOfNoPlane);
         QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->treeView->model());
         model->removeRows(0, model->rowCount());
-        model->insertRows(0, d->face_ids.size());
-        int index = 0;//行数
+        model->insertRows(0, d->face_ids.size());       
+        int index = 0;//行数     
         for (auto it = d->face_ids.begin(); it != d->face_ids.end(); ++it) {             
-            model->setData(model->index(index, 0),QVariant(tr("Face%1").arg(*it)));               
+            model->setData(model->index(index, 0),QVariant(tr("Face%1").arg(*it)));              
             model->setData(model->index(index, 0), QVariant(*it), Qt::UserRole);
-            double radius = 0.0;
-            bool flag = tool->getFaceGemoInfo(TopoDS::Face(adjacentFacesOfNoPlane.at(index)), radius);
+            double curRadius;
+            bool flag = tool->getFaceGemoInfo(TopoDS::Face(adjacentFacesOfNoPlane.at(index)), curRadius);
             if (!flag) {
                 QString text;
                 text = QString::fromLatin1("get the curvature radius parameter of input face failed");
                 QMessageBox::warning(this, QString::fromLatin1("Error Tip"), text);           
             }
             model->setData(model->index(index, 1),
-                QVariant::fromValue<Base::Quantity>(Base::Quantity(radius, Base::Unit::Length)));
+                QVariant::fromValue<Base::Quantity>(Base::Quantity(curRadius, Base::Unit::Length)));
             model->setData(model->index(index, 2),
-                QVariant::fromValue<Base::Quantity>(Base::Quantity(radius, Base::Unit::Length)));          
+                QVariant::fromValue<Base::Quantity>(Base::Quantity(curRadius, Base::Unit::Length)));          
             std::stringstream element;
             element << "Face" << *it;
             if (Gui::Selection().isSelected(docObj, element.str().c_str()))
@@ -511,10 +523,25 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
             else
                 model->setData(model->index(index, 0), Qt::Unchecked, Qt::CheckStateRole);
             ++index;
-        }
+        }      
     }       
 }
 
+
+bool DlgGetNeighborFaces::eventFilter(QObject* target, QEvent* event)
+{
+    if (target == ui->minRadius || target == ui->maxRadius) {
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent* k = static_cast<QKeyEvent*>(event);
+            if (k->key() == Qt::Key_Return || k->key() == Qt::Key_Enter)
+            {
+                on_selectFitButton_clicked();
+                return true;
+            }
+        }
+    }
+    return QWidget::eventFilter(target, event);
+}
 
 void DlgGetNeighborFaces::findShapes()
 {
@@ -529,7 +556,7 @@ void DlgGetNeighborFaces::findShapes()
         ui->shapeObject->addItem(QString::fromUtf8((*it)->Label.getValue()));
         ui->shapeObject->setItemData(index, QString::fromLatin1((*it)->getNameInDocument()));
         if (current_index == 0) {
-            if (Gui::Selection().isSelected(*it)) {
+            if (Gui::Selection().isSelected(*it)) { 
                 current_index = index;
             }
         }
@@ -580,7 +607,7 @@ void DlgGetNeighborFaces::changeEvent(QEvent* e)
         count = model->rowCount();
         for (int i = 0; i < count; i++) {
             int id = model->data(model->index(i, 0), Qt::UserRole).toInt();
-            model->setData(model->index(i, 0), QVariant(tr("Edge%1").arg(id)));
+            model->setData(model->index(i, 0), QVariant(tr("Face%1").arg(id)));
         }
     }
     else {
@@ -717,6 +744,67 @@ void DlgGetNeighborFaces::onDeleteDocument(const App::Document& doc)
         setEnabled(false);
     }
 }
+
+
+void DlgGetNeighborFaces::on_selectFitButton_clicked()
+{
+    std::vector<std::string> removeElements;
+    std::vector<std::string> subElements;
+    FilletRadiusModel* model = static_cast<FilletRadiusModel*>(ui->treeView->model());
+    bool block = model->blockSignals(true);// do not call toggleCheckState
+
+    //读取用户输入的数据
+    double lowBound = ui->minRadius->toPlainText().toDouble();
+    double highBound = ui->maxRadius->toPlainText().toDouble();   
+    if (lowBound > highBound) {
+        QMessageBox::question(this, tr("input Valid"), tr("input minRadius greater than maxRadius "));
+    }
+    for (int i = 0; i < model->rowCount(); ++i) {
+        QModelIndex index = model->index(i, 0);
+        // is not yet checked?
+        QVariant check = index.data(Qt::CheckStateRole);
+        Qt::CheckState state = static_cast<Qt::CheckState>(check.toInt());
+
+        QModelIndex index1 = model->index(i, 1);//第2列
+        QVariant radiusVar = model->data(index1, Qt::EditRole);
+        double curRadius = radiusVar.value<Base::Quantity>().getValue();//注意需要指出类型为单元格                    
+        if (curRadius < lowBound || curRadius > highBound) {//筛选依据：曲率半径 
+            if (state == Qt::Checked) {
+                int id = index.data(Qt::UserRole).toInt();
+                std::stringstream str;
+                str << "Face" << id;
+                removeElements.push_back(str.str());
+            }
+            Qt::CheckState checkState = Qt::Unchecked;
+            QVariant value(static_cast<int>(checkState));
+            model->setData(index, value, Qt::CheckStateRole);                         
+        }
+        else {
+            if (state == Qt::Unchecked) {
+                int id = index.data(Qt::UserRole).toInt();
+                std::stringstream str;
+                str << "Face" << id;
+                subElements.push_back(str.str());
+            }
+            Qt::CheckState checkState = Qt::Checked;
+            QVariant value(static_cast<int>(checkState));
+            model->setData(index, value, Qt::CheckStateRole);       
+        }
+    }
+    model->blockSignals(block);
+    model->updateCheckStates();
+    model->layoutChanged();
+    if (d->object) {
+        App::Document* doc = d->object->getDocument();
+        std::string nameDocument = doc->getName();
+        std::string objNameInDocument = d->object->getNameInDocument();
+        for (auto str : removeElements) {
+            Gui::Selection().rmvSelection(nameDocument.c_str(), objNameInDocument.c_str(),str.c_str());
+        }
+        Gui::Selection().addSelections(nameDocument.c_str(), objNameInDocument.c_str(),subElements);
+    }
+}
+
 
 void DlgGetNeighborFaces::on_selectAllButton_clicked()
 {
