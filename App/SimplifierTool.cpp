@@ -17,28 +17,32 @@
 
 #include "SimplifierTool.h"
 
+//#include <Mod/Part/App/Geometry.h>
 #include "Mod/CADSimplifier/App/BRepAlgoAPI_RemoveFillet.h"
 #ifdef _MSC_VER
 #include <ppl.h>
 #endif
-#include<QtWidgets/qmessagebox.h>
+//#include<QtWidgets/qmessagebox.h>
+#include<QMessageBox>
 #include<BRep_Tool.hxx>
 #include<ShapeFix_Shape.hxx>
 
 #include<Standard_Type.hxx>
-#include<Geom_Plane.hxx>
+
 #include <Geom_Circle.hxx>
 #include <Geom_Surface.hxx>
 #include <Geom_Plane.hxx>
 #include <Geom_CylindricalSurface.hxx>
 #include <Geom_BSplineSurface.hxx>
+#include <Geom_BezierSurface.hxx>
 #include <Geom_SphericalSurface.hxx>
 #include <Geom_ToroidalSurface.hxx>
 #include <Geom_RectangularTrimmedSurface.hxx>
 #include <Geom_OffsetSurface.hxx>
 #include <Geom_ConicalSurface.hxx>
-
-
+#include <Geom_SurfaceOfRevolution.hxx>
+#include <Geom_SurfaceOfLinearExtrusion.hxx>
+#include <GeomPlate_Surface.hxx>
 using namespace CADSimplifier;
 using namespace std;
 using namespace Base;
@@ -163,8 +167,8 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
  
  bool CADSimplifier::SimplifierTool::isHaveCommonVertice(const TopoDS_Face& face,const TopoDS_Face& face1)
  {
-     if (face1.IsEqual(face))
-         return false;
+     if (face.IsNull() || face1.IsNull()) return false;
+     if (face1.IsEqual(face)) return false;
      TopExp_Explorer Ex(face, TopAbs_EDGE);
      TopExp_Explorer Ex1(face1, TopAbs_EDGE);
      TopoDS_Vertex V1, V2, V3, V4;
@@ -183,7 +187,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      }
      return false;
  }
- bool CADSimplifier::SimplifierTool::getFaceGemoInfo(const TopoDS_Face& OCCface,double& radius,...)
+ bool CADSimplifier::SimplifierTool::getSurfaceGemoInfo(const TopoDS_Face& OCCface, double& radius, ...)
  {     
      Handle(Geom_Surface) S = BRep_Tool::Surface(OCCface);
      if (S->IsKind(STANDARD_TYPE(Geom_CylindricalSurface))) {//圆柱面
@@ -203,19 +207,46 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          radius = SS->MinorRadius();//取最大曲率         
      }
       else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
-	  radius =  samplingGetRadiusOfFreeSurface(OCCface, 4);//3*3 9点采样                     
+	     radius =  samplingGetRadiusOfFreeSurface(OCCface, 4);//3*3 9点采样                     
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_BezierSurface))) {//贝塞尔曲面
+          Handle(Geom_BezierSurface) hSurf = Handle(Geom_BezierSurface)::DownCast(S);
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);         
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {
+          Handle(Geom_OffsetSurface) hSurf = Handle(Geom_OffsetSurface)::DownCast(S);
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);         
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfRevolution))) {
+          Handle(Geom_SurfaceOfRevolution) hSurf = Handle(Geom_SurfaceOfRevolution)::DownCast(S);
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);        
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfLinearExtrusion))) {
+          Handle(Geom_SurfaceOfLinearExtrusion) hSurf = Handle(Geom_SurfaceOfLinearExtrusion)::DownCast(S);
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);       
+      }
+      else if (S->IsKind(STANDARD_TYPE(GeomPlate_Surface))) {//待处理
+          Handle(GeomPlate_Surface) hSurf = Handle(GeomPlate_Surface)::DownCast(S);
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_RectangularTrimmedSurface))) {//待处理
+          Handle(Geom_RectangularTrimmedSurface) hSurf = Handle(Geom_RectangularTrimmedSurface)::DownCast(S);
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
       }
      else {
+         //radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2+1);
+         //if (radius < 0) radius = Abs(radius);
+         //return true;
 #ifdef FC_DEBUG
-         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2);
-         if (radius < 0) radius = Abs(radius);
-         return true;
-#endif
-         auto desc = S->get_type_descriptor();         
-         std::ostringstream info;
-         desc->Print(info);  
-         std::string sp = info.str();
-         QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
+         std::string err = "Unhandled surface type ";
+         err += S->DynamicType()->Name();
+         QMessageBox::about(nullptr,QObject::tr("Error Tip"), QString::fromStdString(err));
+         //auto desc = S->get_type_descriptor();         
+         //std::ostringstream info;
+         //desc->Print(info);  
+         //std::string sp = info.str();
+         //QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
+#endif  
          return false;
      }
      if (radius < 0)radius = Abs(radius);
@@ -224,9 +255,16 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
 
  double CADSimplifier::SimplifierTool::samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n)
  {    
-     Handle(Geom_Surface) S = BRep_Tool::Surface(face);
+     //Handle(Geom_Surface) S = BRep_Tool::Surface(face);
      Standard_Real U1,U2,V1,V2;
-     S->Bounds(U1,U2,V1,V2);
+     //S->Bounds(U1,U2,V1,V2);
+     bool flag = this->getBoundsOfASurface(face, U1, U2, V1, V2);
+     if (!flag) {
+#ifdef FC_DEBUG
+         QMessageBox::about(nullptr, QObject::tr("Error Tip"), QString::fromStdString("get the faceBonds Failed"));
+#endif
+         return 0;
+     }
      if (U1 > U2) std::swap(U1, U2);
      if (V1 > V2) std::swap(V1, V2);
      Standard_Real uLength = std::abs(U1 - U2);
@@ -246,12 +284,59 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      return radius; 
  }
 
- void CADSimplifier::SimplifierTool::getAllFacesOfASolidofDocument(const QByteArray& featureName,
-                                                        TopTools_IndexedMapOfShape& allFace)
+
+
+ bool CADSimplifier::SimplifierTool::getBoundsOfASurface(const TopoDS_Face& face,
+     Standard_Real& U1,Standard_Real& U2, Standard_Real& V1,Standard_Real& V2)
  {
-     App::Document* doc = App::GetApplication().getActiveDocument();
-     if (!doc)
-         return;
+     Handle(Geom_Surface) S = BRep_Tool::Surface(face);
+     BRepAdaptor_Surface surface;
+     try {
+         surface.Initialize(face);
+     }
+     catch (const Standard_Failure&) {
+         return false;
+     }
+     switch (surface.GetType()) {              
+         case GeomAbs_BezierSurface: {
+             Handle(Geom_BezierSurface) hSurf = Handle(Geom_BezierSurface)::DownCast(S);
+             hSurf->Bounds(U1, U2, V1, V2);       
+             break;        
+         }
+         case GeomAbs_BSplineSurface: {
+             Handle(Geom_BSplineSurface) hSurf = Handle(Geom_BSplineSurface)::DownCast(S);
+             hSurf->Bounds(U1, U2, V1, V2);
+             break;                                  
+         }
+         case GeomAbs_SurfaceOfRevolution: {
+             Handle(Geom_SurfaceOfRevolution) hSurf = Handle(Geom_SurfaceOfRevolution)::DownCast(S);
+             hSurf->Bounds(U1, U2, V1, V2);
+             break;
+         }
+         case GeomAbs_SurfaceOfExtrusion: {
+             Handle(Geom_SurfaceOfLinearExtrusion) hSurf = Handle(Geom_SurfaceOfLinearExtrusion)::DownCast(S);
+             hSurf->Bounds(U1, U2, V1, V2);
+             break;
+         }            
+         case GeomAbs_OffsetSurface: {
+             Handle(Geom_OffsetSurface) hSurf = Handle(Geom_OffsetSurface)::DownCast(S);
+             hSurf->Bounds(U1, U2, V1, V2);
+             break;
+         }                     
+         case GeomAbs_OtherSurface: {
+             S->Bounds(U1, U2, V1, V2);//待处理
+             break;       
+         }                        
+     }
+     return true;
+ }
+ void CADSimplifier::SimplifierTool::getAllFacesOfASolidOfDocument(TopTools_IndexedMapOfShape& allFace, 
+     const QByteArray& featureName,const App::DocumentObject* obj)
+ {
+     //App::Document* doc = App::GetApplication().getActiveDocument();
+     //if (!doc)return;
+     auto doc = obj ? obj->getDocument() : App::GetApplication().getActiveDocument();
+     assert(doc);
      App::DocumentObject* docObj = doc->getObject((const char*)featureName);
      if (docObj && docObj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
          TopoDS_Shape myShape = static_cast<Part::Feature*>(docObj)->Shape.getValue();
@@ -326,6 +411,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
              auto it = std::find(selectedFaces.begin(), selectedFaces.end(), aFace);
              if (it != selectedFaces.end()) continue;
              if (this->isHaveCommonVertice(aFace, selectedFace)) {  
+             //if (Part::checkIntersection(aFace, selectedFace, true, true)) {  //Solid
                  int id = allFace.FindIndex(aFace);
                  auto it = std::find(NeighborFacesIDSet.begin(), NeighborFacesIDSet.end(), id);
                  if (it == NeighborFacesIDSet.end()) {

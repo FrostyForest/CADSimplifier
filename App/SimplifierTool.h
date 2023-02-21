@@ -64,10 +64,13 @@ public:
         const TopTools_IndexedMapOfShape& allFace,std::vector<TopoDS_Shape>& destFaces);
   
     //help
+    bool getBoundsOfASurface(const TopoDS_Face& face, Standard_Real& U1, Standard_Real& U2,
+                          Standard_Real& V1, Standard_Real& V2);
     bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
-    bool getFaceGemoInfo(const TopoDS_Face& OCCface,double& radius, ...);
+    bool getSurfaceGemoInfo(const TopoDS_Face& OCCface, double& radius, ...);
     double samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n);
-    void getAllFacesOfASolidofDocument(const QByteArray& featureName,TopTools_IndexedMapOfShape& allFace);
+    void
+    getAllFacesOfASolidOfDocument(TopTools_IndexedMapOfShape& allFace,const QByteArray& featureName,const App::DocumentObject* obj = nullptr);
     void getSelectedFaces(std::vector<TopoDS_Shape>& selectedFaces);
 public :
     inline void setShape(const TopoDS_Shape& shape) { this->_Shape = shape; }
