@@ -251,16 +251,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
  {    
      Handle(Geom_Surface) S = BRep_Tool::Surface(face);
      Standard_Real U1,U2,V1,V2;
-     S->Bounds(U1,U2,V1,V2);
-    /* bool flag = this->getBoundsOfASurface(face, U1, U2, V1, V2);
-     if (!flag) {
-#ifdef FC_DEBUG
-         QMessageBox::about(nullptr, QObject::tr("Error Tip"), QString::fromStdString("get the faceBonds Failed"));
-#endif
-         return 0;
-     }*/
-     if (U1 > U2) std::swap(U1, U2);
-     if (V1 > V2) std::swap(V1, V2);
+     S->Bounds(U1,U2,V1,V2);  
      Standard_Real uLength = std::abs(U1 - U2);
      Standard_Real vLength = std::abs(V1 - V2);
      BRepAdaptor_Surface adapt(face);
@@ -280,56 +271,9 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
 
 
 
- //bool CADSimplifier::SimplifierTool::getBoundsOfASurface(const TopoDS_Face& face,
- //    Standard_Real& U1,Standard_Real& U2, Standard_Real& V1,Standard_Real& V2)
- //{
- //    Handle(Geom_Surface) S = BRep_Tool::Surface(face);
- //    BRepAdaptor_Surface surface;
- //    try {
- //        surface.Initialize(face);
- //    }
- //    catch (const Standard_Failure&) {
- //        return false;
- //    }
- //    switch (surface.GetType()) {              
- //        case GeomAbs_BezierSurface: {
- //            Handle(Geom_BezierSurface) hSurf = Handle(Geom_BezierSurface)::DownCast(S);
- //            hSurf->Bounds(U1, U2, V1, V2);       
- //            break;        
- //        }
- //        case GeomAbs_BSplineSurface: {
- //            Handle(Geom_BSplineSurface) hSurf = Handle(Geom_BSplineSurface)::DownCast(S);
- //            hSurf->Bounds(U1, U2, V1, V2);
- //            break;                                  
- //        }
- //        case GeomAbs_SurfaceOfRevolution: {
- //            Handle(Geom_SurfaceOfRevolution) hSurf = Handle(Geom_SurfaceOfRevolution)::DownCast(S);
- //            hSurf->Bounds(U1, U2, V1, V2);
- //            break;
- //        }
- //        case GeomAbs_SurfaceOfExtrusion: {
- //            Handle(Geom_SurfaceOfLinearExtrusion) hSurf = Handle(Geom_SurfaceOfLinearExtrusion)::DownCast(S);
- //            hSurf->Bounds(U1, U2, V1, V2);
- //            break;
- //        }            
- //        case GeomAbs_OffsetSurface: {
- //            Handle(Geom_OffsetSurface) hSurf = Handle(Geom_OffsetSurface)::DownCast(S);
- //            hSurf->Bounds(U1, U2, V1, V2);
- //            break;
- //        }                     
- //        case GeomAbs_OtherSurface: {
- //            S->Bounds(U1, U2, V1, V2);//
- //            break;       
- //        }                        
- //    }
- //    return true;
- //}
-
  void CADSimplifier::SimplifierTool::getAllFacesOfASolidOfDocument(TopTools_IndexedMapOfShape& allFace, 
      const QByteArray& featureName,const App::DocumentObject* obj)
  {
-     //App::Document* doc = App::GetApplication().getActiveDocument();
-     //if (!doc)return;
      auto doc = obj ? obj->getDocument() : App::GetApplication().getActiveDocument();
      assert(doc);
      App::DocumentObject* docObj = doc->getObject((const char*)featureName);

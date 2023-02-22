@@ -225,7 +225,7 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     // timer for highlighting
     d->highlighttimer = new QTimer(this);
     d->highlighttimer->setSingleShot(true);
-    connect(d->highlighttimer, SIGNAL(timeout()), this, SLOT(onHighlightFaces()));//高亮显示
+    connect(d->highlighttimer, SIGNAL(timeout()), this, SLOT(onHighlightFaces()));
     
     d->shapeType = type;
     if (d->shapeType == DlgGetNeighborFaces::Faces) {      
@@ -236,7 +236,7 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
         model->setHeaderData(2, Qt::Horizontal, tr("End radius"), Qt::DisplayRole);
     }
     ui->treeView->setRootIsDecorated(false);
-    ui->treeView->setItemDelegate(new CADSimplifierGui::FilletRadiusDelegate(this));//半径设置修改
+    ui->treeView->setItemDelegate(new CADSimplifierGui::FilletRadiusDelegate(this));
     ui->treeView->setModel(model);
     QHeaderView* header = ui->treeView->header();
     header->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -259,7 +259,6 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     findShapes();
     on_selectFitButton_clicked();
 
-    //隐藏
     ui->selectFitButton->hide();
     ui->selectFitButton->hide();
     ui->selectEdges->hide();
@@ -530,10 +529,6 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
 
 bool DlgGetNeighborFaces::eventFilter(QObject* target, QEvent* event)
 {
-    //QRegExp reg;
-    //reg.setPattern(QObject::tr("^[0x30-9,]+$"));//Key_0 = 0x30 即48
-    //bool flag = reg.exactMatch(QString::number(k->key()));
-
     QTextEdit* textEdit = (QTextEdit*)target;
     if (textEdit == ui->minRadius || textEdit == ui->maxRadius) {
         if (event->type() == QEvent::KeyPress) {
@@ -542,18 +537,10 @@ bool DlgGetNeighborFaces::eventFilter(QObject* target, QEvent* event)
             {
                 on_selectFitButton_clicked();
                 return true;
-            }
-            
-            //else if (/*!flag*/ k->key() < Qt::Key_0 || k->key() >Qt::Key_9) {//enter和number之外的无效输入   光标移动以及删除、组合键等应该保留          
-            //    /*QString str = textEdit->toPlainText();             
-            //    str.remove(str.size() - 1, 1);
-            //    textEdit->setText(str);  */       
-            //    event->ignore();
-            //    return true;//生效，结束事件循环
-            //}
+            }          
         }
     }
-    return QWidget::eventFilter(target, event);//默认的实现
+    return QWidget::eventFilter(target, event);
 }
 
 void DlgGetNeighborFaces::findShapes()
@@ -775,7 +762,6 @@ void DlgGetNeighborFaces::on_selectFitButton_clicked()
     FilletRadiusModel* model = static_cast<FilletRadiusModel*>(ui->treeView->model());
     bool block = model->blockSignals(true);// do not call toggleCheckState
 
-    //读取用户输入的数据
     double lowBound = ui->minRadius->toPlainText().toDouble();
     double highBound = ui->maxRadius->toPlainText().toDouble();   
     if (lowBound > highBound) {
@@ -790,10 +776,10 @@ void DlgGetNeighborFaces::on_selectFitButton_clicked()
         QVariant check = index.data(Qt::CheckStateRole);
         Qt::CheckState state = static_cast<Qt::CheckState>(check.toInt());
 
-        QModelIndex index1 = model->index(i, 1);//第2列
+        QModelIndex index1 = model->index(i, 1);
         QVariant radiusVar = model->data(index1, Qt::EditRole);
-        double curRadius = radiusVar.value<Base::Quantity>().getValue();//注意需要指出类型为单元格                    
-        if (curRadius < lowBound || curRadius > highBound) {//筛选依据：曲率半径 
+        double curRadius = radiusVar.value<Base::Quantity>().getValue();                   
+        if (curRadius < lowBound || curRadius > highBound) {
             if (state == Qt::Checked) {
                 int id = index.data(Qt::UserRole).toInt();
                 std::stringstream str;
