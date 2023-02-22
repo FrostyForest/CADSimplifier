@@ -244,7 +244,14 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     header->setSectionsMovable(false);
 
     ui->minRadius->insertPlainText(QString::fromLatin1("0"));
-    ui->maxRadius->insertPlainText(QString::fromLatin1("1"));
+    ui->maxRadius->append(QString::fromLatin1("1"));
+    int maxW = 250;
+    int maxH = 40;
+    ui->minRadius->setMaximumWidth(maxW);
+    ui->minRadius->setMaximumHeight(maxH);
+    ui->maxRadius->setMaximumWidth(maxW);
+    ui->maxRadius->setMaximumHeight(maxH);
+
     ui->minRadius->installEventFilter(this);
     ui->maxRadius->installEventFilter(this);
 
@@ -383,9 +390,7 @@ void DlgGetNeighborFaces::onSelectionChanged(const Gui::SelectionChanges& msg)
         // when adding a sub-element to the selection check
         // whether this is the currently handled object
      
-        App::Document* doc = d->object->getDocument();
-        //auto doc = d->object ? d->object->getDocument() : App::GetApplication().getActiveDocument();
-        //assert(doc);
+        App::Document* doc = d->object->getDocument();      
         std::string docname = doc->getName();
         std::string objname = d->object->getNameInDocument();
         if (docname == msg.pDocName && objname == msg.pObjectName) {
@@ -423,46 +428,46 @@ void DlgGetNeighborFaces::onHighlightFaces()
         }
 
         //在treeviw中检查选中的item，并将它们添加到SoSelectionElementAction中，以便在3D视图中显示选择的面 待完善中
-        // select the faces  //连续选中都显示高亮
-        {
-            SoSearchAction searchAction;
-            searchAction.setType(PartGui::SoBrepFaceSet::getClassTypeId());
-            searchAction.setInterest(SoSearchAction::FIRST);
-            searchAction.apply(view->getRoot());
-            SoPath* selectionPath = searchAction.getPath();
-            if (selectionPath) {
-                ParameterGrp::handle hGrp =
-                    Gui::WindowParameter::getDefaultParameter()->GetGroup("View");
-                SbColor selectionColor(0.1f, 0.8f, 0.1f);
-                unsigned long selection = (unsigned long)(selectionColor.getPackedValue());
-                selection = hGrp->GetUnsigned("SelectionColor", selection);
-                float transparency;
-                selectionColor.setPackedValue((uint32_t)selection, transparency);
+         //select the faces  //连续选中都显示高亮
+        //{
+        //    SoSearchAction searchAction;
+        //    searchAction.setType(PartGui::SoBrepFaceSet::getClassTypeId());
+        //    searchAction.setInterest(SoSearchAction::FIRST);
+        //    searchAction.apply(view->getRoot());
+        //    SoPath* selectionPath = searchAction.getPath();
+        //    if (selectionPath) {
+        //        ParameterGrp::handle hGrp =
+        //            Gui::WindowParameter::getDefaultParameter()->GetGroup("View");
+        //        SbColor selectionColor(0.1f, 0.8f, 0.1f);
+        //        unsigned long selection = (unsigned long)(selectionColor.getPackedValue());
+        //        selection = hGrp->GetUnsigned("SelectionColor", selection);
+        //        float transparency;
+        //        selectionColor.setPackedValue((uint32_t)selection, transparency);
 
-                // clear the selection first
-                //Gui::SoSelectionElementAction clear(Gui::SoSelectionElementAction::None);
-                //clear.apply(selectionPath);
+        //        // clear the selection first
+        //        //Gui::SoSelectionElementAction clear(Gui::SoSelectionElementAction::None);
+        //        //clear.apply(selectionPath);
 
-                Gui::SoSelectionElementAction action(Gui::SoSelectionElementAction::Append);
-                action.setColor(selectionColor);
-                action.apply(selectionPath);
+        //        Gui::SoSelectionElementAction action(Gui::SoSelectionElementAction::Append);
+        //        action.setColor(selectionColor);
+        //        action.apply(selectionPath);
 
-                QAbstractItemModel* model = ui->treeView->model();
-                SoFaceDetail detail;
-                action.setElement(&detail);
-                for (int i = 0; i < model->rowCount(); ++i) {
-                    QVariant value = model->index(i, 0).data(Qt::CheckStateRole);
-                    Qt::CheckState checkState = static_cast<Qt::CheckState>(value.toInt());
-                    // is item checked
-                    if (checkState & Qt::Checked) {
-                        // the index value of the face
-                        int id = model->index(i, 0).data(Qt::UserRole).toInt();
-                        detail.setFaceIndex(id - 1);//设置索引
-                        action.apply(selectionPath);
-                    }
-                }
-            }
-        }
+        //        QAbstractItemModel* model = ui->treeView->model();
+        //        SoFaceDetail detail;
+        //        action.setElement(&detail);
+        //        for (int i = 0; i < model->rowCount(); ++i) {
+        //            QVariant value = model->index(i, 0).data(Qt::CheckStateRole);
+        //            Qt::CheckState checkState = static_cast<Qt::CheckState>(value.toInt());
+        //            // is item checked
+        //            if (checkState & Qt::Checked) {
+        //                // the index value of the face
+        //                int id = model->index(i, 0).data(Qt::UserRole).toInt();
+        //                detail.setFaceIndex(id - 1);//设置索引
+        //                action.apply(selectionPath);
+        //            }
+        //        }
+        //    }
+        //}
     }
 }
 
@@ -525,7 +530,12 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
 
 bool DlgGetNeighborFaces::eventFilter(QObject* target, QEvent* event)
 {
-    if (target == ui->minRadius || target == ui->maxRadius) {
+    //QRegExp reg;
+    //reg.setPattern(QObject::tr("^[0x30-9,]+$"));//Key_0 = 0x30 即48
+    //bool flag = reg.exactMatch(QString::number(k->key()));
+
+    QTextEdit* textEdit = (QTextEdit*)target;
+    if (textEdit == ui->minRadius || textEdit == ui->maxRadius) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* k = static_cast<QKeyEvent*>(event);
             if (k->key() == Qt::Key_Return || k->key() == Qt::Key_Enter)
@@ -533,9 +543,17 @@ bool DlgGetNeighborFaces::eventFilter(QObject* target, QEvent* event)
                 on_selectFitButton_clicked();
                 return true;
             }
+            
+            //else if (/*!flag*/ k->key() < Qt::Key_0 || k->key() >Qt::Key_9) {//enter和number之外的无效输入   光标移动以及删除、组合键等应该保留          
+            //    /*QString str = textEdit->toPlainText();             
+            //    str.remove(str.size() - 1, 1);
+            //    textEdit->setText(str);  */       
+            //    event->ignore();
+            //    return true;//生效，结束事件循环
+            //}
         }
     }
-    return QWidget::eventFilter(target, event);
+    return QWidget::eventFilter(target, event);//默认的实现
 }
 
 void DlgGetNeighborFaces::findShapes()
@@ -746,6 +764,8 @@ void DlgGetNeighborFaces::onDeleteDocument(const App::Document& doc)
         setEnabled(false);
     }
 }
+
+
 
 
 void DlgGetNeighborFaces::on_selectFitButton_clicked()

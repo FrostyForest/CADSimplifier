@@ -64,8 +64,8 @@ public:
         const TopTools_IndexedMapOfShape& allFace,std::vector<TopoDS_Shape>& destFaces);
   
     //help
-    bool getBoundsOfASurface(const TopoDS_Face& face, Standard_Real& U1, Standard_Real& U2,
-                          Standard_Real& V1, Standard_Real& V2);
+    /*bool getBoundsOfASurface(const TopoDS_Face& face, Standard_Real& U1, Standard_Real& U2,
+                          Standard_Real& V1, Standard_Real& V2);*/
     bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
     bool getSurfaceGemoInfo(const TopoDS_Face& OCCface, double& radius, ...);
     double samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n);

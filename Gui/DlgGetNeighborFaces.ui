@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1117</width>
-    <height>805</height>
+    <width>883</width>
+    <height>602</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -171,12 +171,16 @@
             <widget class="QTextEdit" name="minRadius">
              <property name="maximumSize">
               <size>
-               <width>256</width>
-               <height>51</height>
+               <width>50</width>
+               <height>50</height>
               </size>
              </property>
-             <property name="styleSheet">
-              <string notr="true">font: 20pt &quot;Microsoft YaHei UI&quot;;</string>
+             <property name="font">
+              <font>
+               <pointsize>14</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
              </property>
             </widget>
            </item>
@@ -197,12 +201,16 @@
             <widget class="QTextEdit" name="maxRadius">
              <property name="maximumSize">
               <size>
-               <width>256</width>
-               <height>51</height>
+               <width>50</width>
+               <height>50</height>
               </size>
              </property>
-             <property name="styleSheet">
-              <string notr="true">font: 20pt &quot;Microsoft YaHei UI&quot;;</string>
+             <property name="font">
+              <font>
+               <pointsize>14</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
              </property>
             </widget>
            </item>
@@ -213,7 +221,7 @@
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>298</width>
+               <width>798</width>
                <height>20</height>
               </size>
              </property>
@@ -249,6 +257,18 @@
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
             <widget class="QPushButton" name="selectAllButton">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>50</height>
+              </size>
+             </property>
              <property name="text">
               <string>All</string>
              </property>
@@ -256,6 +276,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="selectNoneButton">
+             <property name="maximumSize">
+              <size>
+               <width>150</width>
+               <height>50</height>
+              </size>
+             </property>
              <property name="text">
               <string>None</string>
              </property>
