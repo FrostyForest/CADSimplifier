@@ -245,7 +245,7 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
 
     ui->minRadius->insertPlainText(QString::fromLatin1("0"));
     ui->maxRadius->append(QString::fromLatin1("1"));
-    int maxW = 250;
+    int maxW = 50;
     int maxH = 40;
     ui->minRadius->setMaximumWidth(maxW);
     ui->minRadius->setMaximumHeight(maxH);
@@ -529,7 +529,7 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
 
 bool DlgGetNeighborFaces::eventFilter(QObject* target, QEvent* event)
 {
-    QTextEdit* textEdit = (QTextEdit*)target;
+    QTextEdit* textEdit = static_cast<QTextEdit*>(target);
     if (textEdit == ui->minRadius || textEdit == ui->maxRadius) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* k = static_cast<QKeyEvent*>(event);

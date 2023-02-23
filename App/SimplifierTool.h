@@ -62,14 +62,15 @@ public:
                   double maxtol /*const std::vector<TopoDS_Shape>& shapeVec*/);																   
 	std::vector<int> getAllNeighborFacesIdOfNoPlane(const std::vector<TopoDS_Shape>& selectedFaces,
         const TopTools_IndexedMapOfShape& allFace,std::vector<TopoDS_Shape>& destFaces);
-  
-    //help
-    bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
+
     bool getSurfaceGemoInfo(const TopoDS_Face& OCCface, double& radius, ...);
-    double samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n);
     void
     getAllFacesOfASolidOfDocument(TopTools_IndexedMapOfShape& allFace,const QByteArray& featureName,const App::DocumentObject* obj = nullptr);
     void getSelectedFaces(std::vector<TopoDS_Shape>& selectedFaces);
+protected: 
+    //help
+    bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
+    double samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n);
 public :
     inline void setShape(const TopoDS_Shape& shape) { this->_Shape = shape; }
 

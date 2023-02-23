@@ -216,7 +216,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
           radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);         
       }
       else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfRevolution))) {
-          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);        
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 4);        
       }
       else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfLinearExtrusion))) {
           radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);       
@@ -256,9 +256,9 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      Standard_Real vLength = std::abs(V1 - V2);
      BRepAdaptor_Surface adapt(face);
      std::vector<double> vecRadius;
-     for (int i = 1; i < n - 1; ++i) {
+     for (int i = 1; i <= n - 1; ++i) {
          double u = U1 + i * uLength / n;
-         for (int j = 1; j < n - 1; ++j) {
+         for (int j = 1; j <= n - 1; ++j) {
              double v = V1 + j * vLength / n;
              BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());              
              vecRadius.emplace_back(1 / prop.MaxCurvature());
