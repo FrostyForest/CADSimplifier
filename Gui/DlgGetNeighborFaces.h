@@ -61,7 +61,7 @@ public:
     {
         VERTICES,
         EDGES,
-        Faces
+        Faces,      
     };
 
     DlgGetNeighborFaces(ShapeType type,Part::FilletBase*,QWidget* parent = nullptr,Qt::WindowFlags fl = Qt::WindowFlags());
@@ -95,7 +95,7 @@ private Q_SLOTS:
 private:
     std::unique_ptr<Ui_DlgGetNeighborFaces> ui;
     class Private;
-    std::unique_ptr<Private> d;//impl模式
+    std::unique_ptr<Private> d;//pimpl
     std::unique_ptr<CADSimplifier::SimplifierTool> tool;
 };
 
