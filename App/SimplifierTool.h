@@ -70,8 +70,8 @@ protected:
 
     //help
     bool isHaveCommonVertice(const TopoDS_Face& face, const TopoDS_Face& face1);
-    double samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n);
 public :
+    double samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n);
     inline void setShape(const TopoDS_Shape& shape) { this->_Shape = shape; }
 
     inline const TopoDS_Shape& getShape() const { return this->_Shape; }

@@ -247,28 +247,61 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      return true;    
  }
 
- double CADSimplifier::SimplifierTool::samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n)
- {    
+ //double CADSimplifier::SimplifierTool::samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n)
+ //{    
+ //    Handle(Geom_Surface) S = BRep_Tool::Surface(face);
+ //    Standard_Real U1,U2,V1,V2;
+ //    S->Bounds(U1,U2,V1,V2);  
+ //    Standard_Real uLength = std::abs(U1 - U2);
+ //    Standard_Real vLength = std::abs(V1 - V2);
+ //    BRepAdaptor_Surface adapt(face);
+ //    std::vector<double> vecRadius;
+ //    for (int i = 1; i <= n - 1; ++i) {
+ //        double u = U1 + i * uLength / n;
+ //        for (int j = 1; j <= n - 1; ++j) {
+ //            double v = V1 + j * vLength / n;
+ //            BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());              
+ //            vecRadius.emplace_back(1 / prop.MaxCurvature());
+ //        }
+ //    }
+ //    double sum = std::accumulate(vecRadius.begin(), vecRadius.end(), 0.0);
+ //    double radius = sum / vecRadius.size();            
+ //    return radius; 
+ //}
+ 
+ /// <summary>
+ ///    
+ /// </summary>
+ /// <param name="face"></param>
+ /// <param name="n">取点数目</param>
+ /// <returns></returns>
+ double CADSimplifier::SimplifierTool::samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,
+                                                                      int n )
+ {
      Handle(Geom_Surface) S = BRep_Tool::Surface(face);
-     Standard_Real U1,U2,V1,V2;
-     S->Bounds(U1,U2,V1,V2);  
-     Standard_Real uLength = std::abs(U1 - U2);
-     Standard_Real vLength = std::abs(V1 - V2);
+     Standard_Real U1, U2, V1, V2;
+     S->Bounds(U1, U2, V1, V2);
+     Standard_Real uStep = (U2 - U1) / (n + 1);
+     Standard_Real vStep = (V2 - V1) / (n + 1);
      BRepAdaptor_Surface adapt(face);
      std::vector<double> vecRadius;
-     for (int i = 1; i <= n - 1; ++i) {
-         double u = U1 + i * uLength / n;
-         for (int j = 1; j <= n - 1; ++j) {
-             double v = V1 + j * vLength / n;
-             BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());              
-             vecRadius.emplace_back(1 / prop.MaxCurvature());
+     for (int i = 1; i <= n ; ++i) {
+         double u = U1 + i * uStep;
+         for (int j = 1; j <= n ; ++j) {
+             double v = V1 + j * vStep;
+             BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());
+
+             double dRMax = Abs(prop.MaxCurvature());
+             double dRMin = Abs( prop.MinCurvature());
+             double dAbsMaxRadius = dRMax > dRMin ? dRMax : dRMin;
+
+             vecRadius.emplace_back(1 / dAbsMaxRadius);
          }
      }
      double sum = std::accumulate(vecRadius.begin(), vecRadius.end(), 0.0);
-     double radius = sum / vecRadius.size();            
-     return radius; 
+     double radius = sum / vecRadius.size();
+     return radius;
  }
-
 
 
  void CADSimplifier::SimplifierTool::getAllFacesOfASolidOfDocument(TopTools_IndexedMapOfShape& allFace, 

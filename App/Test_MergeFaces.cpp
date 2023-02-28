@@ -68,6 +68,7 @@
 #include <BRep_Builder.hxx>
 
 #include "UtilExtendSurface.h"
+#include <Mod/CADSimplifier/App/SimplifierTool.h>
 
 //bool Test_MergeFaces::Preform()
 //{
@@ -221,27 +222,47 @@
 //    return true;
 //}
 
-//²âÊÔÃæµÄÀ©Õ¹
+////²âÊÔÃæµÄÀ©Õ¹
+//bool Test_MergeFaces::Preform()
+//{
+//    BRep_Builder builder;
+//    TopoDS_Compound ExtendedFaceShape; 
+//    builder.MakeCompound(ExtendedFaceShape);
+//
+//    TopTools_ListIteratorOfListOfShape itF(FacesToMerge);
+//    for (; itF.More(); itF.Next()) {
+//        TopoDS_Face aFace = TopoDS::Face(itF.Value());
+//        TopoDS_Face theFExtended;
+//        MyExtendFace(aFace, 1.0, Standard_True, Standard_True, Standard_True, Standard_True,
+//                     theFExtended);
+//
+//        BRep_Builder().Add(ExtendedFaceShape, theFExtended);
+//    }
+//    Part::Feature* pInsectFaces =
+//        (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
+//                                                                             "FixShape");
+//    pInsectFaces->Shape.setValue(ExtendedFaceShape);
+//    pInsectFaces->Visibility.setValue(true);
+//
+//
+//    return false;
+//}
+//²âÊÔÔ²½Ç°ë¾¶
 bool Test_MergeFaces::Preform()
 {
-    BRep_Builder builder;
-    TopoDS_Compound ExtendedFaceShape; 
-    builder.MakeCompound(ExtendedFaceShape);
+    CADSimplifier::SimplifierTool tools;
 
     TopTools_ListIteratorOfListOfShape itF(FacesToMerge);
     for (; itF.More(); itF.Next()) {
         TopoDS_Face aFace = TopoDS::Face(itF.Value());
         TopoDS_Face theFExtended;
+
+        tools.samplingGetRadiusOfFreeSurface(aFace, 3);
+
         MyExtendFace(aFace, 1.0, Standard_True, Standard_True, Standard_True, Standard_True,
                      theFExtended);
 
-        BRep_Builder().Add(ExtendedFaceShape, theFExtended);
     }
-    Part::Feature* pInsectFaces =
-        (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
-                                                                             "FixShape");
-    pInsectFaces->Shape.setValue(ExtendedFaceShape);
-    pInsectFaces->Visibility.setValue(true);
 
 
     return false;
