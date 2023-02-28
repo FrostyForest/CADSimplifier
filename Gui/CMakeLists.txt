@@ -1,5 +1,6 @@
 
-include_directories(
+include_directories(         
+    ${QT_INCLUDE_DIR}             
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Boost_INCLUDE_DIRS}
