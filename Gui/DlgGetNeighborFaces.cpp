@@ -245,12 +245,7 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
 
     ui->minRadius->insertPlainText(QString::fromLatin1("0"));
     ui->maxRadius->append(QString::fromLatin1("1"));
-    int maxW = 50;
-    int maxH = 40;
-    ui->minRadius->setMaximumWidth(maxW);
-    ui->minRadius->setMaximumHeight(maxH);
-    ui->maxRadius->setMaximumWidth(maxW);
-    ui->maxRadius->setMaximumHeight(maxH);
+   
 
     ui->minRadius->installEventFilter(this);
     ui->maxRadius->installEventFilter(this);
