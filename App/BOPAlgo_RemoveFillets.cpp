@@ -1,6 +1,6 @@
 #include "BOPAlgo_RemoveFillets.h"
 
-#include <Mod/CADSimplifier/App/BOPAlgo_RemoveFillets.h>
+//#include <Mod/CADSimplifier/App/BOPAlgo_RemoveFillets.h>
 
 #include <BOPAlgo_Alerts.hxx>
 #include <BOPAlgo_BOP.hxx>
@@ -496,7 +496,7 @@ private://! @name Private methods performing the operation
         BRepBndLib::Add(myFeature, aFeatureBox);
 
         //const Standard_Real anExtLength = sqrt(aFeatureBox.SquareExtent());
-        const Standard_Real anExtLength = 30;
+        const Standard_Real anExtLength = 10;
 
         const Standard_Integer aNbFA = theMFAdjacent.Extent();
         Message_ProgressScope aPS(theRange, "Extending adjacent faces", aNbFA);
@@ -506,7 +506,9 @@ private://! @name Private methods performing the operation
             TopoDS_Face aFExt;
             Standard_Boolean bExtU , bExtV;
             DetermineExtendDirection(aF, bExtU, bExtV);
-            BRepLib::ExtendFace(aF, anExtLength, bExtU, bExtU, bExtV, bExtV, aFExt);
+            //BRepLib::ExtendFace(aF, anExtLength, bExtU, bExtU, bExtV, bExtV, aFExt);
+            MyExtendFace(aF, anExtLength, bExtU, bExtU, bExtV, bExtV, aFExt);
+
             theFaceExtFaceMap.Add(aF, aFExt);
             myHistory->AddModified(aF, aFExt);
         }
@@ -601,7 +603,7 @@ private://! @name Private methods performing the operation
         // Trimming tool
         //把互相剪裁过的延伸面再和原来的实体的边进行剪裁
         BOPAlgo_Builder aGFTrim;
-        aGFTrim.SetFuzzyValue(0.01);
+        aGFTrim.SetFuzzyValue(0.1);
 
         // Get the splits of the face and add them for trimming
         TopTools_ListOfShape anExtSplits; //剪切后的面
@@ -660,64 +662,64 @@ private://! @name Private methods performing the operation
         }
 
         //这部分是不是对于删除圆角不需要，应该不存在分为多个，或者拓扑大的变化
-        if (aLFTrimmed.Extent() > 1) {
-            // Chose the correct faces - the ones that contains edges with proper
-            // bi-normal direction
-            TopTools_IndexedDataMapOfShapeListOfShape anEFMap; //所有被二次剪裁的面边关系
-            TopTools_ListIteratorOfListOfShape itLF(aLFTrimmed);
-            for (; itLF.More(); itLF.Next())
-                TopExp::MapShapesAndAncestors(itLF.Value(), TopAbs_EDGE, TopAbs_FACE, anEFMap);
+        //if (aLFTrimmed.Extent() > 1) {
+        //    // Chose the correct faces - the ones that contains edges with proper
+        //    // bi-normal direction
+        //    TopTools_IndexedDataMapOfShapeListOfShape anEFMap; //所有被二次剪裁的面边关系
+        //    TopTools_ListIteratorOfListOfShape itLF(aLFTrimmed);
+        //    for (; itLF.More(); itLF.Next())
+        //        TopExp::MapShapesAndAncestors(itLF.Value(), TopAbs_EDGE, TopAbs_FACE, anEFMap);
 
-            // Check edges orientations
-            TopTools_MapOfShape aFacesToAvoid, aValidFaces;
-            FindExtraShapes(anEFMap, aMEdgesToCheckOri, aGFTrim, aFacesToAvoid, &aValidFaces);
+        //    // Check edges orientations
+        //    TopTools_MapOfShape aFacesToAvoid, aValidFaces;
+        //    FindExtraShapes(anEFMap, aMEdgesToCheckOri, aGFTrim, aFacesToAvoid, &aValidFaces);
 
-            if (aLFTrimmed.Extent() - aFacesToAvoid.Extent() > 1) {
-                // It is possible that the splits are forming the different blocks.
-                // Take only those containing the valid faces.
-                TopoDS_Compound aCF;
-                BRep_Builder().MakeCompound(aCF);
-                itLF.Initialize(aLFTrimmed);
-                for (; itLF.More(); itLF.Next()) {
-                    if (!aFacesToAvoid.Contains(itLF.Value()))
-                        BRep_Builder().Add(aCF, itLF.Value());
-                }
+        //    if (aLFTrimmed.Extent() - aFacesToAvoid.Extent() > 1) {
+        //        // It is possible that the splits are forming the different blocks.
+        //        // Take only those containing the valid faces.
+        //        TopoDS_Compound aCF;
+        //        BRep_Builder().MakeCompound(aCF);
+        //        itLF.Initialize(aLFTrimmed);
+        //        for (; itLF.More(); itLF.Next()) {
+        //            if (!aFacesToAvoid.Contains(itLF.Value()))
+        //                BRep_Builder().Add(aCF, itLF.Value());
+        //        }
 
-                TopTools_ListOfShape aLCB;
-                BOPTools_AlgoTools::MakeConnexityBlocks(aCF, TopAbs_EDGE, TopAbs_FACE, aLCB);
-                if (aLCB.Extent() > 1) {
-                    TopTools_ListIteratorOfListOfShape itLCB(aLCB);
-                    for (; itLCB.More(); itLCB.Next()) {
-                        // Check if the block contains any valid faces
-                        const TopoDS_Shape& aCB = itLCB.Value();
-                        TopoDS_Iterator itF(aCB);
-                        for (; itF.More(); itF.Next()) {
-                            if (aValidFaces.Contains(itF.Value()))
-                                break;
-                        }
-                        if (!itF.More()) {
-                            // Invalid block
-                            for (itF.Initialize(aCB); itF.More(); itF.Next())
-                                aFacesToAvoid.Add(itF.Value());
-                        }
-                    }
-                }
-            }
+        //        TopTools_ListOfShape aLCB;
+        //        BOPTools_AlgoTools::MakeConnexityBlocks(aCF, TopAbs_EDGE, TopAbs_FACE, aLCB);
+        //        if (aLCB.Extent() > 1) {
+        //            TopTools_ListIteratorOfListOfShape itLCB(aLCB);
+        //            for (; itLCB.More(); itLCB.Next()) {
+        //                // Check if the block contains any valid faces
+        //                const TopoDS_Shape& aCB = itLCB.Value();
+        //                TopoDS_Iterator itF(aCB);
+        //                for (; itF.More(); itF.Next()) {
+        //                    if (aValidFaces.Contains(itF.Value()))
+        //                        break;
+        //                }
+        //                if (!itF.More()) {
+        //                    // Invalid block
+        //                    for (itF.Initialize(aCB); itF.More(); itF.Next())
+        //                        aFacesToAvoid.Add(itF.Value());
+        //                }
+        //            }
+        //        }
+        //    }
 
-            itLF.Initialize(aLFTrimmed);
-            for (; itLF.More();) {
-                if (aFacesToAvoid.Contains(itLF.Value()))
-                    aLFTrimmed.Remove(itLF);
-                else
-                    itLF.Next();
-            }
-        }
-        else if (aLFTrimmed.IsEmpty()) {
-            // Use all splits, including those having the bounds of extended face
-            anExpF.ReInit();
-            for (; anExpF.More(); anExpF.Next())
-                aLFTrimmed.Append(anExpF.Current());
-        }
+        //    itLF.Initialize(aLFTrimmed);
+        //    for (; itLF.More();) {
+        //        if (aFacesToAvoid.Contains(itLF.Value()))
+        //            aLFTrimmed.Remove(itLF);
+        //        else
+        //            itLF.Next();
+        //    }
+        //}
+        //else if (aLFTrimmed.IsEmpty()) {
+        //    // Use all splits, including those having the bounds of extended face
+        //    anExpF.ReInit();
+        //    for (; anExpF.More(); anExpF.Next())
+        //        aLFTrimmed.Append(anExpF.Current());
+        //}
 
         if (aLFTrimmed.Extent()) {
             // Remove the internal edges and vertices from the faces

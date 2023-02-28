@@ -62,6 +62,13 @@
 #include <App/Application.h>
 #include <App/Document.h>
 #include <App/DocumentObject.h>
+#include <BRepAdaptor_Surface.hxx>
+#include <GeomLib.hxx>
+#include <BRepLib_MakeFace.hxx>
+#include <BRep_Builder.hxx>
+
+#include "UtilExtendSurface.h"
+
 //bool Test_MergeFaces::Preform()
 //{
 //
@@ -119,84 +126,86 @@
 //    FaceMerged = aBuilder.Shape();
 //    return true;
 //}
-bool Test_MergeFaces::Preform()
-{  
-    Part::TopoShape tpsh;
-    tpsh.setShape(Body);
-//    bool flag = tpsh.fix(1E-6, 1E-10, 1E-5);
-    bool flag = tpsh.fix(1E-6, 1E-8, 1E-1);
 
-    Part::Feature* pInsectFaces =
-        (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
-                                                                             "FixShape");
-    pInsectFaces->Shape.setValue(tpsh.getShape());
-    pInsectFaces->Visibility.setValue(true);
-
-    //TopoDS_Face OCCface;
-    //TopoDS_Shape sh = FacesToMerge.First();
-    //TopTools_ListIteratorOfListOfShape itF(FacesToMerge);
-    //for (; itF.More(); itF.Next()) {
-    //    const TopoDS_Shape& sh = itF.Value();
-    //    TopoDS_Face OCCface = TopoDS::Face(sh);
-
-    //    Handle(Geom_Surface) S = BRep_Tool::Surface(OCCface);
-
-    //    if (S->IsKind(STANDARD_TYPE(Geom_CylindricalSurface))) {
-    //        Handle(Geom_CylindricalSurface) SS = Handle(Geom_CylindricalSurface)::DownCast(S);
-    //    }
-    //    else if (S->IsKind(STANDARD_TYPE(Geom_SphericalSurface))) {
-    //        Handle(Geom_SphericalSurface) SS = Handle(Geom_SphericalSurface)::DownCast(S);
-    //    }
-    //    else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {
-    //        Handle(Geom_ToroidalSurface) SS = Handle(Geom_ToroidalSurface)::DownCast(S);
-    //    }
-    //    else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {
-    //        Handle(Geom_BSplineSurface) SS = Handle(Geom_BSplineSurface)::DownCast(S);
-    //        Standard_Real U1, U2, V1, V2;
-    //        SS->Bounds(U1, U2, V1, V2);
-
-    //    }
-    //    else if (S->IsKind(STANDARD_TYPE(Geom_ConicalSurface))) {
-    //        Handle(Geom_ConicalSurface) SS = Handle(Geom_ConicalSurface)::DownCast(S);
-    //        gp_Pnt ptApex = SS->Apex();
-    //        double dRadiu = SS->RefRadius();
-    //        Standard_Real U1, U2, V1, V2;
-    //        SS->Bounds(U1, U2, V1, V2);
-
-    //        Standard_Real A1, A2, A3, B1, B2, B3, C1, C2, C3,D;
-    //        SS->Coefficients(A1, A2, A3, B1, B2, B3, C1, C2, C3, D);
-    //    }
-    //    else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {
-    //        Handle(Geom_OffsetSurface) SS = Handle(Geom_OffsetSurface)::DownCast(S);
-    //    }
-    //    else if (S->IsKind(STANDARD_TYPE(Geom_Plane))) {
-    //        Handle(Geom_Plane) SS = Handle(Geom_Plane)::DownCast(S);
-    //    }
-    //    else if (S->IsKind(STANDARD_TYPE(Geom_RectangularTrimmedSurface))) {
-    //        Handle(Geom_RectangularTrimmedSurface) SS =
-    //            Handle(Geom_RectangularTrimmedSurface)::DownCast(S);
-    //    }
-    //    else {
-    //        auto desc = S->get_type_descriptor();
-    //    }
-    //}
-
-
-
- /*   if (S->IsKind(STANDARD_TYPE(Geom_SphericalSurface))
-        || S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface)) || S->IsUPeriodic()) {
-        const Standard_Boolean isShell =
-            (sh.ShapeType() == TopAbs_SHELL || sh.ShapeType() == TopAbs_FACE);
-
-        if (!isShell && S->IsKind(STANDARD_TYPE(Geom_SphericalSurface))) {
-            Handle(Geom_SphericalSurface) SS = Handle(Geom_SphericalSurface)::DownCast(S);
-            gp_Pnt PC = SS->Location();
-            return Standard_True;
-        }
-    }*/
-
-    return false;
-}
+//²âÊÔFix
+//bool Test_MergeFaces::Preform()
+//{  
+//    Part::TopoShape tpsh;
+//    tpsh.setShape(Body);
+////    bool flag = tpsh.fix(1E-6, 1E-10, 1E-5);
+//    bool flag = tpsh.fix(1E-6, 1E-8, 1E-1);
+//
+//    Part::Feature* pInsectFaces =
+//        (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
+//                                                                             "FixShape");
+//    pInsectFaces->Shape.setValue(tpsh.getShape());
+//    pInsectFaces->Visibility.setValue(true);
+//
+//    //TopoDS_Face OCCface;
+//    //TopoDS_Shape sh = FacesToMerge.First();
+//    //TopTools_ListIteratorOfListOfShape itF(FacesToMerge);
+//    //for (; itF.More(); itF.Next()) {
+//    //    const TopoDS_Shape& sh = itF.Value();
+//    //    TopoDS_Face OCCface = TopoDS::Face(sh);
+//
+//    //    Handle(Geom_Surface) S = BRep_Tool::Surface(OCCface);
+//
+//    //    if (S->IsKind(STANDARD_TYPE(Geom_CylindricalSurface))) {
+//    //        Handle(Geom_CylindricalSurface) SS = Handle(Geom_CylindricalSurface)::DownCast(S);
+//    //    }
+//    //    else if (S->IsKind(STANDARD_TYPE(Geom_SphericalSurface))) {
+//    //        Handle(Geom_SphericalSurface) SS = Handle(Geom_SphericalSurface)::DownCast(S);
+//    //    }
+//    //    else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {
+//    //        Handle(Geom_ToroidalSurface) SS = Handle(Geom_ToroidalSurface)::DownCast(S);
+//    //    }
+//    //    else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {
+//    //        Handle(Geom_BSplineSurface) SS = Handle(Geom_BSplineSurface)::DownCast(S);
+//    //        Standard_Real U1, U2, V1, V2;
+//    //        SS->Bounds(U1, U2, V1, V2);
+//
+//    //    }
+//    //    else if (S->IsKind(STANDARD_TYPE(Geom_ConicalSurface))) {
+//    //        Handle(Geom_ConicalSurface) SS = Handle(Geom_ConicalSurface)::DownCast(S);
+//    //        gp_Pnt ptApex = SS->Apex();
+//    //        double dRadiu = SS->RefRadius();
+//    //        Standard_Real U1, U2, V1, V2;
+//    //        SS->Bounds(U1, U2, V1, V2);
+//
+//    //        Standard_Real A1, A2, A3, B1, B2, B3, C1, C2, C3,D;
+//    //        SS->Coefficients(A1, A2, A3, B1, B2, B3, C1, C2, C3, D);
+//    //    }
+//    //    else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {
+//    //        Handle(Geom_OffsetSurface) SS = Handle(Geom_OffsetSurface)::DownCast(S);
+//    //    }
+//    //    else if (S->IsKind(STANDARD_TYPE(Geom_Plane))) {
+//    //        Handle(Geom_Plane) SS = Handle(Geom_Plane)::DownCast(S);
+//    //    }
+//    //    else if (S->IsKind(STANDARD_TYPE(Geom_RectangularTrimmedSurface))) {
+//    //        Handle(Geom_RectangularTrimmedSurface) SS =
+//    //            Handle(Geom_RectangularTrimmedSurface)::DownCast(S);
+//    //    }
+//    //    else {
+//    //        auto desc = S->get_type_descriptor();
+//    //    }
+//    //}
+//
+//
+//
+// /*   if (S->IsKind(STANDARD_TYPE(Geom_SphericalSurface))
+//        || S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface)) || S->IsUPeriodic()) {
+//        const Standard_Boolean isShell =
+//            (sh.ShapeType() == TopAbs_SHELL || sh.ShapeType() == TopAbs_FACE);
+//
+//        if (!isShell && S->IsKind(STANDARD_TYPE(Geom_SphericalSurface))) {
+//            Handle(Geom_SphericalSurface) SS = Handle(Geom_SphericalSurface)::DownCast(S);
+//            gp_Pnt PC = SS->Location();
+//            return Standard_True;
+//        }
+//    }*/
+//
+//    return false;
+//}
 
 //bool Test_MergeFaces::Preform() 
 //{ 
@@ -211,3 +220,29 @@ bool Test_MergeFaces::Preform()
 //    
 //    return true;
 //}
+
+//²âÊÔÃæµÄÀ©Õ¹
+bool Test_MergeFaces::Preform()
+{
+    BRep_Builder builder;
+    TopoDS_Compound ExtendedFaceShape; 
+    builder.MakeCompound(ExtendedFaceShape);
+
+    TopTools_ListIteratorOfListOfShape itF(FacesToMerge);
+    for (; itF.More(); itF.Next()) {
+        TopoDS_Face aFace = TopoDS::Face(itF.Value());
+        TopoDS_Face theFExtended;
+        MyExtendFace(aFace, 1.0, Standard_True, Standard_True, Standard_True, Standard_True,
+                     theFExtended);
+
+        BRep_Builder().Add(ExtendedFaceShape, theFExtended);
+    }
+    Part::Feature* pInsectFaces =
+        (Part::Feature*)App::GetApplication().getActiveDocument()->addObject("Part::Feature",
+                                                                             "FixShape");
+    pInsectFaces->Shape.setValue(ExtendedFaceShape);
+    pInsectFaces->Visibility.setValue(true);
+
+
+    return false;
+}
