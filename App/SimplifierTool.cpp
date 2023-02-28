@@ -17,28 +17,32 @@
 
 #include "SimplifierTool.h"
 
+//#include <Mod/Part/App/Geometry.h>
 #include "Mod/CADSimplifier/App/BRepAlgoAPI_RemoveFillet.h"
 #ifdef _MSC_VER
 #include <ppl.h>
 #endif
-#include<QtWidgets/qmessagebox.h>
+//#include<QtWidgets/qmessagebox.h>
+#include<QMessageBox>
 #include<BRep_Tool.hxx>
 #include<ShapeFix_Shape.hxx>
 
 #include<Standard_Type.hxx>
-#include<Geom_Plane.hxx>
+
 #include <Geom_Circle.hxx>
 #include <Geom_Surface.hxx>
 #include <Geom_Plane.hxx>
 #include <Geom_CylindricalSurface.hxx>
 #include <Geom_BSplineSurface.hxx>
+#include <Geom_BezierSurface.hxx>
 #include <Geom_SphericalSurface.hxx>
 #include <Geom_ToroidalSurface.hxx>
 #include <Geom_RectangularTrimmedSurface.hxx>
 #include <Geom_OffsetSurface.hxx>
 #include <Geom_ConicalSurface.hxx>
-
-
+#include <Geom_SurfaceOfRevolution.hxx>
+#include <Geom_SurfaceOfLinearExtrusion.hxx>
+#include <GeomPlate_Surface.hxx>
 using namespace CADSimplifier;
 using namespace std;
 using namespace Base;
@@ -132,13 +136,10 @@ bool CADSimplifier::SimplifierTool::fixShape(
             tpsh.setShape(myShape);
             flag = tpsh.fix(precision, mintol, maxtol);
             if (!flag)
-                return false;
-            
+                return false;          
         }
-
     }
-    return flag;
-   
+    return flag;  
 }
 
 void SimplifierTool::Restore(Base::XMLReader& reader)
@@ -164,18 +165,18 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
  
  
  
- bool CADSimplifier::SimplifierTool::isHaveCommonVertice(const TopoDS_Face& face,
-                                                      const TopoDS_Face& face1)
+ bool CADSimplifier::SimplifierTool::isHaveCommonVertice(const TopoDS_Face& face,const TopoDS_Face& face1)
  {
-     if (face1.IsEqual(face))
-         return false;
+     if (face.IsNull() || face1.IsNull()) return false;
+     if (face1.IsEqual(face)) return false;
      TopExp_Explorer Ex(face, TopAbs_EDGE);
      TopExp_Explorer Ex1(face1, TopAbs_EDGE);
      TopoDS_Vertex V1, V2, V3, V4;
      for (Ex.Init(face, TopAbs_EDGE); Ex.More(); Ex.Next()) {
          TopExp::Vertices(TopoDS::Edge(Ex.Current()), V1, V2);
          for (Ex1.Init(face1, TopAbs_EDGE); Ex1.More(); Ex1.Next()) {           
-             TopExp::Vertices(TopoDS::Edge(Ex1.Current()), V3, V4);
+             TopExp::Vertices(TopoDS::Edge(Ex1.Current()), V3, V4);             
+             //if (V1.IsEqual(V3) || V2.IsEqual(V4) || V1.IsEqual(V4) || V2.IsEqual(V3)) {//Orientatin方向不同
              if (V1.IsSame(V3) || V2.IsSame(V4) || V1.IsSame(V4) || V2.IsSame(V3)) {
                  return true;
              }
@@ -186,7 +187,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      }
      return false;
  }
- bool CADSimplifier::SimplifierTool::getFaceGemoInfo(const TopoDS_Face& OCCface, double& radius,...)
+ bool CADSimplifier::SimplifierTool::getSurfaceGemoInfo(const TopoDS_Face& OCCface, double& radius, ...)
  {     
      Handle(Geom_Surface) S = BRep_Tool::Surface(OCCface);
      if (S->IsKind(STANDARD_TYPE(Geom_CylindricalSurface))) {//圆柱面
@@ -206,38 +207,75 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          radius = SS->MinorRadius();//取最大曲率         
      }
       else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
-          BRepAdaptor_Surface adapt(OCCface);
-          double u = adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
-          double v = adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
-          BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());
-          radius = 1 / prop.MaxCurvature();           
+	     radius =  samplingGetRadiusOfFreeSurface(OCCface, 4);//3*3 9点采样                     
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_BezierSurface))) {//贝塞尔曲面
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);         
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);         
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfRevolution))) {
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 4);        
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfLinearExtrusion))) {
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);       
+      }
+      else if (S->IsKind(STANDARD_TYPE(GeomPlate_Surface))) {
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
+      }
+      else if (S->IsKind(STANDARD_TYPE(Geom_RectangularTrimmedSurface))) {
+          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
       }
      else {
-          BRepAdaptor_Surface adapt(OCCface);
-          double u =
-              adapt.FirstUParameter() + (adapt.LastUParameter() - adapt.FirstUParameter()) / 2.0;
-          double v =
-              adapt.FirstVParameter() + (adapt.LastVParameter() - adapt.FirstVParameter()) / 2.0;
-          BRepLProp_SLProps prop(adapt, u, v, 2, Precision::Confusion());
-          radius = 1 / prop.MaxCurvature();           
-
-         //auto desc = S->get_type_descriptor();        
-         //QString text;
-         //text = QString::fromLatin1(
-         //        "No provide relevant methond for input face type,the input face type is (%1)")
-         //        .arg(QString::fromLatin1(desc->get_type_name()));
-         //QMessageBox::about(nullptr, QString::fromLatin1("Error Tip"),text);       
-         //return false;
+         //radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2+1);
+         //if (radius < 0) radius = Abs(radius);
+         //return true;
+#ifdef FC_DEBUG
+         std::string err = "Unhandled surface type ";
+         err += S->DynamicType()->Name();
+         QMessageBox::about(nullptr,QObject::tr("Error Tip"), QString::fromStdString(err));
+         //auto desc = S->get_type_descriptor();         
+         //std::ostringstream info;
+         //desc->Print(info);  
+         //std::string sp = info.str();
+         //QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
+#endif  
+         return false;
      }
+     if (radius < 0)radius = Abs(radius);
      return true;    
  }
 
- void CADSimplifier::SimplifierTool::getAllFacesOfASolidofDocument(const QByteArray& featureName,
-                                                        TopTools_IndexedMapOfShape& allFace)
+ double CADSimplifier::SimplifierTool::samplingGetRadiusOfFreeSurface(const TopoDS_Face& face,int n)
+ {    
+     Handle(Geom_Surface) S = BRep_Tool::Surface(face);
+     Standard_Real U1,U2,V1,V2;
+     S->Bounds(U1,U2,V1,V2);  
+     Standard_Real uLength = std::abs(U1 - U2);
+     Standard_Real vLength = std::abs(V1 - V2);
+     BRepAdaptor_Surface adapt(face);
+     std::vector<double> vecRadius;
+     for (int i = 1; i <= n - 1; ++i) {
+         double u = U1 + i * uLength / n;
+         for (int j = 1; j <= n - 1; ++j) {
+             double v = V1 + j * vLength / n;
+             BRepLProp_SLProps prop(adapt, u, v, 2,Precision::Confusion());              
+             vecRadius.emplace_back(1 / prop.MaxCurvature());
+         }
+     }
+     double sum = std::accumulate(vecRadius.begin(), vecRadius.end(), 0.0);
+     double radius = sum / vecRadius.size();            
+     return radius; 
+ }
+
+
+
+ void CADSimplifier::SimplifierTool::getAllFacesOfASolidOfDocument(TopTools_IndexedMapOfShape& allFace, 
+     const QByteArray& featureName,const App::DocumentObject* obj)
  {
-     App::Document* doc = App::GetApplication().getActiveDocument();
-     if (!doc)
-         return;
+     auto doc = obj ? obj->getDocument() : App::GetApplication().getActiveDocument();
+     assert(doc);
      App::DocumentObject* docObj = doc->getObject((const char*)featureName);
      if (docObj && docObj->getTypeId().isDerivedFrom(Part::Feature::getClassTypeId())) {
          TopoDS_Shape myShape = static_cast<Part::Feature*>(docObj)->Shape.getValue();
@@ -307,13 +345,18 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          TopoDS_Face selectedFace = TopoDS::Face(aSelectedface);
          for (Standard_Integer i = 1; i <= allFace.Extent(); ++i) {
              TopoDS_Face aFace = TopoDS::Face(allFace.FindKey(i));
-             if (this->isHaveCommonVertice(aFace, selectedFace)) {
-                 Handle(Geom_Surface) S = BRep_Tool::Surface(aFace);
-                 if (!(S->IsKind(STANDARD_TYPE(Geom_Plane)))) {
-                     int id = allFace.FindIndex(aFace);
-                     destFaces.emplace_back(aFace);
+             Handle(Geom_Surface) S = BRep_Tool::Surface(aFace);
+             if (S->IsKind(STANDARD_TYPE(Geom_Plane))) continue;              
+             auto it = std::find(selectedFaces.begin(), selectedFaces.end(), aFace);
+             if (it != selectedFaces.end()) continue;
+             if (this->isHaveCommonVertice(aFace, selectedFace)) {  
+             //if (Part::checkIntersection(aFace, selectedFace, true, true)) {  //Solid
+                 int id = allFace.FindIndex(aFace);
+                 auto it = std::find(NeighborFacesIDSet.begin(), NeighborFacesIDSet.end(), id);
+                 if (it == NeighborFacesIDSet.end()) {
                      NeighborFacesIDSet.emplace_back(id);
-                 }
+                     destFaces.emplace_back(aFace);                                                                                                                                                   
+                }                                       
              }
          }
      }
