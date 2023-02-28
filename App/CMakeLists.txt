@@ -11,7 +11,6 @@ include_directories(
     ${PYTHON_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIR}
     ${XercesC_INCLUDE_DIRS}	
-    ${QT_INCLUDE_DIR}     
 )
 link_directories(${OCC_LIBRARY_DIR})
 
@@ -51,6 +50,8 @@ SET(CADSimplifier_SRCS
     SimplifierTool.h  	
     Test_MergeFaces.h
     Test_MergeFaces.cpp
+    	UtilExtendSurface.h
+	UtilExtendSurface.cpp
 )
 
 add_library(CADSimplifier SHARED ${CADSimplifier_SRCS})
