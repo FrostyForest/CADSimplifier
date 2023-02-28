@@ -502,7 +502,7 @@ void DlgGetNeighborFaces::on_shapeObject_activated(int itemPos)
         for (auto it = d->face_ids.begin(); it != d->face_ids.end(); ++it) {             
             model->setData(model->index(index, 0),QVariant(tr("Face%1").arg(*it)));              
             model->setData(model->index(index, 0), QVariant(*it), Qt::UserRole);
-            double curRadius;
+            double curRadius = 0.0;
             bool flag = tool->getSurfaceGemoInfo(TopoDS::Face(adjacentFacesOfNoPlane.at(index)), curRadius);
             if (!flag) {
 #ifdef FC_DEBUG
