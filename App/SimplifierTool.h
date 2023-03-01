@@ -57,7 +57,8 @@ public:
     void Restore(Base::XMLReader& reader) override;
 
     TopoDS_Shape RemoveFillet(const std::vector<TopoDS_Shape>& s) ;
-
+    TopoDS_Shape AutoRemoveFillet();
+    
     bool fixShape(double precision, double mintol,
                   double maxtol /*const std::vector<TopoDS_Shape>& shapeVec*/);																   
 	std::vector<int> getAllNeighborFacesIdOfNoPlane(const std::vector<TopoDS_Shape>& selectedFaces,
@@ -78,10 +79,6 @@ public :
 
 private:
     TopoDS_Shape _Shape;
-#ifdef FC_DEBUG
-public:
-    TopoDS_Shape ShapeOfIntersectResult;
-    TopoDS_Shape ShapeOfTrimResult;
-#endif
+
 };
 }// namespace CADSimplifier

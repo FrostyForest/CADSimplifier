@@ -106,8 +106,39 @@ TopoDS_Shape SimplifierTool::RemoveFillet(const std::vector<TopoDS_Shape>& s)
     return rf.Shape();
 #endif
 }
+TopoDS_Shape SimplifierTool::AutoRemoveFillet()
+{
+    //if (this->_Shape.IsNull())
+    //    Standard_Failure::Raise("Base shape is null");
+#if OCC_VERSION_HEX < 0x070300
+    (void)s;
+    throw Base::RuntimeError("Defeaturing is available only in OCC 7.3.0 and up.");
+#else
+    BRepAlgoAPI_RemoveFillet rf;
+    //rf.SetRunParallel(true);
+    //rf.SetShape(this->_Shape);
+    //for (std::vector<TopoDS_Shape>::const_iterator it = s.begin(); it != s.end(); ++it)
+    //    rf.AddFaceToRemove(*it);
+    //rf.Build();
+    //if (!rf.IsDone()) {
+    //    // error treatment
+    //    Standard_SStream aSStream;
+    //    rf.DumpErrors(aSStream);
+    //    const std::string& resultstr = aSStream.str();
+    //    const char* cstr2 = resultstr.c_str();
+    //    throw Base::RuntimeError(cstr2);
+    //}
+    //if (rf.HasWarnings()) {
+    //    // warnings treatment
+    //    Standard_SStream aSStream;
+    //    rf.DumpWarnings(aSStream);
+    //}
+    return rf.Shape();
+#endif
+}
 
-bool CADSimplifier::SimplifierTool::fixShape(
+
+    bool CADSimplifier::SimplifierTool::fixShape(
     double precision, double mintol, double maxtol /*const std::vector<TopoDS_Shape>& shapeVec*/)
 {
    /* QString shapeTypeName = QString::fromStdString("Cube"); 
@@ -146,6 +177,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
 {
  
 }
+
 
  Base::BoundBox3d SimplifierTool::getBoundBox() const 
 {

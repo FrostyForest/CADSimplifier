@@ -331,6 +331,63 @@ void CmdCADSimplifier_ShapeHealing::activated(int iMsg) {
     tool.fixShape(/*shapeVec*/ precision, mintol,maxtol);   
     //Base::Console().Message("Hello, World!\n");
 }
+#pragma region 命令：自动去除圆角
+  DEF_STD_CMD_A(CmdCADSimplifier_AutoRemoveFillets)
+CmdCADSimplifier_AutoRemoveFillets::CmdCADSimplifier_AutoRemoveFillets()
+    : Command("CADSimplifier_AutoRemoveFillets")
+{
+    sAppModule = "CADSimplifier";
+    sGroup = QT_TR_NOOP("CADSimplifier");
+    sMenuText = QT_TR_NOOP("自动去除圆角");
+    sToolTipText = QT_TR_NOOP("自动去除圆角");
+    sWhatsThis = "自动搜索并去除模型中的圆角";
+    sStatusTip = sToolTipText;
+    sPixmap = "CADSimplifier_GetNeighborFaces";
+    //sAccel = "SHIFT+G";
+}
+
+void CmdCADSimplifier_AutoRemoveFillets::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+
+    //后续增加去除圆角选项
+   // Gui::Control().showDialog(new CADSimplifierGui::TaskGetNeighborFaces(nullptr));
+
+    Gui::WaitCursor wc;
+
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
+    openCommand(QT_TRANSLATE_NOOP("Command", "AutoRemoveFillets"));
+    for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
+        try {
+            App::DocumentObject* pActiveDoc = it->getObject();
+            Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+            TopoDS_Shape sh = feat->Shape.getShape().getShape();
+
+            SimplifierTool tool;
+            tool.setShape(sh);
+            tool.AutoRemoveFillet();
+
+            //auto uiDoc = Gui::Application::Instance->activeDocument();
+            //Part::Feature* pNewFeat =
+            //    (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "RemoveFillet");
+            //pNewFeat->Shape.setValue(nsh);
+            //feat->Visibility.setValue(false);
+        }
+        catch (const Base::Exception& e) {
+            Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
+        }
+    }
+
+    commitCommand();
+    updateActive();
+}
+
+bool CmdCADSimplifier_AutoRemoveFillets::isActive() {
+    return true;
+}
+
+#pragma endregion
 
 
 //===========================================================================
@@ -341,6 +398,7 @@ void CreateCADSimplifierCommands(void)
     Gui::CommandManager& rcCmdMgr = Gui::Application::Instance->commandManager();
     rcCmdMgr.addCommand(new CmdCADSimplifierTest());
     rcCmdMgr.addCommand(new CmdCADSimplifierRemoveFillets());
-	rcCmdMgr.addCommand(new CmdCADSimplifier_GetNeighborFaces());
+    rcCmdMgr.addCommand(new CmdCADSimplifier_AutoRemoveFillets());
+    rcCmdMgr.addCommand(new CmdCADSimplifier_GetNeighborFaces());
     rcCmdMgr.addCommand(new CmdCADSimplifier_ShapeHealing());
 }
