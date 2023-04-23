@@ -207,7 +207,7 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     : QWidget(parent, fl), ui(new Ui_DlgGetNeighborFaces()), d(new Private())
 {
     ui->setupUi(this);
-
+    ui->groupBox->setVisible(0);
     ui->filletStartRadius->setMaximum(INT_MAX);
     ui->filletStartRadius->setMinimum(0);
     ui->filletStartRadius->setUnit(Base::Unit::Length);
