@@ -11,6 +11,10 @@
 #include <algorithm>
 #include <climits>
 #include <sstream>
+#include <QLineEdit>
+#include <QLabel>
+#include <QString>
+#include <QVBoxLayout>
 
 #include <BRep_Tool.hxx>
 #include <TopExp.hxx>
@@ -232,10 +236,10 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     connect(d->highlighttimer, SIGNAL(timeout()), this, SLOT(onHighlightFaces()));
     
     d->shapeType = type;
-    if (d->shapeType == DlgGetNeighborFaces::Faces) {      
-        ui->parameterName->setTitle(tr("AdjacentFaces Parameter"));
+    if (d->shapeType == DlgGetNeighborFaces::Faces) {
+        ui->parameterName->setTitle(QStringLiteral("ÁÚ½ÓÔ²½ÇÃæ"));
         ui->labelfillet->setText(tr("Faces type"));
-        model->setHeaderData(0, Qt::Horizontal, tr("AdjacentFaces to Get"), Qt::DisplayRole);
+        model->setHeaderData(0, Qt::Horizontal, tr("ID"), Qt::DisplayRole);
         model->setHeaderData(1, Qt::Horizontal, tr("Start radius"), Qt::DisplayRole);
         model->setHeaderData(2, Qt::Horizontal, tr("End radius"), Qt::DisplayRole);
     }
@@ -268,6 +272,8 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     ui->labelRadius->hide();
     ui->filletStartRadius->hide();  
     ui->filletEndRadius->hide();
+    
+    
 }
 
 void DlgGetNeighborFaces::on_filletStartRadius_valueChanged(const Base::Quantity& radius)
@@ -300,7 +306,7 @@ void DlgGetNeighborFaces::on_filletType_activated(int index)
     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->treeView->model());
     if (index == 0) {
         if (d->shapeType == ShapeType::Faces)        
-            model->setHeaderData(1, Qt::Horizontal, tr("Radius"), Qt::DisplayRole);
+            model->setHeaderData(1, Qt::Horizontal, QStringLiteral("°ë¾¶"), Qt::DisplayRole);
         ui->treeView->hideColumn(2);
         ui->filletEndRadius->hide();
     }
@@ -335,7 +341,6 @@ void DlgGetNeighborFaces::toggleCheckState(const QModelIndex& index)
     int id = index.data(Qt::UserRole).toInt();
     QString name = QString::fromLatin1("Face%1").arg(id);
     Qt::CheckState checkState = static_cast<Qt::CheckState>(check.toInt());
-
     bool block = this->blockSelection(true);
 
     // is item checked
@@ -882,6 +887,19 @@ TaskGetNeighborFaces::TaskGetNeighborFaces(Part::FilletBase* fillet)
                                          widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);
+    //QPointer<QDialog> p = nullptr;
+    //p=new QDialog(nullptr);
+    //QVBoxLayout *layout=new QVBoxLayout(p);
+    //QLineEdit* lineEdit = new QLineEdit(p);
+    //layout->addWidget(lineEdit);
+    //QLabel* label = new QLabel(p);
+    //connect(lineEdit, &QLineEdit::returnPressed, [lineEdit,label]() {
+    //    QString text = lineEdit->text();
+    //    label->setText(QStringLiteral(text));
+    //    });
+    //layout->addWidget(label);
+    //p->show();
+    
 }
 
 TaskGetNeighborFaces::~TaskGetNeighborFaces()

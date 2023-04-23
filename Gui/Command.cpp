@@ -25,6 +25,13 @@
 #ifndef _PreComp_
 #endif
 
+# include <QApplication>
+# include <qfileinfo.h>
+# include <qinputdialog.h>
+# include <qmessagebox.h>
+# include <QPointer>
+# include <qstringlist.h>
+
 #include <Base/Console.h>
 #include <App/Document.h>
 #include <Gui/Application.h>
@@ -286,6 +293,7 @@ void CmdCADSimplifier_GetNeighborFaces::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     Gui::Control().showDialog(new CADSimplifierGui::TaskGetNeighborFaces(nullptr));
+
 }
 
 bool CmdCADSimplifier_GetNeighborFaces::isActive()
