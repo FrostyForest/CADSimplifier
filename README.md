@@ -13,10 +13,13 @@
 如：E:\source\freecad\FreeCAD-master\src\Mod路径下添加拷贝的文件夹。
 3.在yourFreeCAD/Mod文件夹下的同级目录的CMakeLists.txt文件里添加一句
    add_subdirectory(CADSimplifier)，接着用cmake重新生成project即可
+
 #### 使用说明
 1 启动FreeCAD
 2 打开一个新模型文件
 3 切换到CADSimplifier工具台
 4 CADSimplifier工具台提供了一个工具栏和菜单。点击工具栏里的删除圆角图标进行测试
+
+
 
 
