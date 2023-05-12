@@ -43,9 +43,13 @@
 #include <Geom_SurfaceOfRevolution.hxx>
 #include <Geom_SurfaceOfLinearExtrusion.hxx>
 #include <GeomPlate_Surface.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
+#include <TopOpeBRepTool_AncestorsTool.hxx>
 using namespace CADSimplifier;
 using namespace std;
 using namespace Base;
+
+#pragma execution_character_set("utf-8")
 
 TYPESYSTEM_SOURCE(CADSimplifier::SimplifierTool, Data::ComplexGeoData)
 
@@ -427,6 +431,269 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      }
      return NeighborFacesIDSet;
  }
+
+ char* CADSimplifier::SimplifierTool::checkFaceType(const TopoDS_Face& OCCface, double& radius,char* &str ...)
+ {
+     Handle(Geom_Surface) S = BRep_Tool::Surface(OCCface);
+     if (S->IsKind(STANDARD_TYPE(Geom_CylindricalSurface))) {//圆柱面
+         Handle(Geom_CylindricalSurface) SS = Handle(Geom_CylindricalSurface)::DownCast(S);
+         radius = SS->Radius();
+         str =("圆柱面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_SphericalSurface))) {//球面
+         Handle(Geom_SphericalSurface) SS = Handle(Geom_SphericalSurface)::DownCast(S);
+         radius = SS->Radius();
+         str = ("球面") ;
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_ConicalSurface))) {//圆锥面
+         Handle(Geom_ConicalSurface) SS = Handle(Geom_ConicalSurface)::DownCast(S);
+         radius = SS->RefRadius();
+         str = ("圆锥面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_ToroidalSurface))) {//环形曲面
+         Handle(Geom_ToroidalSurface) SS = Handle(Geom_ToroidalSurface)::DownCast(S);
+         radius = SS->MinorRadius();//取最大曲率  
+         str = ("环形曲面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 4);//3*3 9点采样
+         str = ("样条曲面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_BezierSurface))) {//贝塞尔曲面
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
+         str = ("贝塞尔曲面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
+         str = ("球面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfRevolution))) {
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 4);
+         str = ("围绕某个轴旋转曲线所形成的曲面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfLinearExtrusion))) {
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
+         str = ("过沿着某个方向延伸曲线而形成的曲面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(GeomPlate_Surface))) {
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
+         str = ("过沿着某个方向延伸曲线而形成的曲面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_RectangularTrimmedSurface))) {
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
+         str = ("由矩形边界限制的二维曲面");
+     }
+     else if (S->IsKind(STANDARD_TYPE(Geom_Plane))) {
+         str = ("平面");
+     }
+     else {
+         //radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2+1);
+         //if (radius < 0) radius = Abs(radius);
+         //return true;
+#ifdef FC_DEBUG
+         std::string err = "Unhandled surface type ";
+         err += S->DynamicType()->Name();
+         QMessageBox::about(nullptr, QObject::tr("Error Tip"), QString::fromStdString(err));
+         //auto desc = S->get_type_descriptor();         
+         //std::ostringstream info;
+         //desc->Print(info);  
+         //std::string sp = info.str();
+         //QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
+#endif  
+         return "error";
+     }
+ 
+     if (radius < 0)radius = Abs(radius);
+     return "error";
+ }
+
+ void CADSimplifier::SimplifierTool::findCommonEdge(const TopoDS_Face& F1, const TopoDS_Face& F2,TopTools_ListOfShape &Edge_list)
+ {
+     TopExp_Explorer Exp;
+     TopExp_Explorer Exp2;
+     for (Exp.Init(F1, TopAbs_EDGE); Exp.More(); Exp.Next()) {
+         TopoDS_Edge E1 = TopoDS::Edge(Exp.Current());
+         for (Exp2.Init(F2, TopAbs_EDGE); Exp2.More(); Exp2.Next()) {
+             TopoDS_Edge E2 = TopoDS::Edge(Exp2.Current());
+             if (E1.IsSame(E2)) { // check if they are the same edge
+                 Edge_list.Append(E1);
+                 continue;
+             }
+             else { // check if they share a common vertex or are geometrically coincident
+                 //TopoDS_Vertex V1, V2;
+                 //TopExp::Vertices(E1, V1, V2); // get the vertices of E1
+                 //gp_Pnt P1 = BRep_Tool::Pnt(V1); // get the point of V1
+                 //gp_Pnt P2 = BRep_Tool::Pnt(V2); // get the point of V2
+                 //Standard_Real Tol = BRep_Tool::Tolerance(E1); // get the tolerance of E1
+                 //BRepExtrema_DistShapeShape DSS(E2, V1); // compute the distance between E2 and P1
+                 //if (DSS.Value() <= Tol) { // check if P1 is on E2
+                 //    Edge_list.Append(E1);
+                 //    continue;
+                 //}
+                 //DSS.LoadS2(V2); // compute the distance between E2 and P2
+                 //if (DSS.Value() <= Tol) { // check if P2 is on E2
+                 //    Edge_list.Append(E1);
+                 //    continue;
+                 //}
+
+             }
+         }
+         
+     }
+ }
+
+ void CADSimplifier::SimplifierTool::getEdgesOfSelectedFace() {//获取包含选定面的边并添加到freecad中
+     //Base::Type partid = Base::Type::fromName("Part::Feature");
+     //std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
+     //App::Document* doc = App::GetApplication().getActiveDocument();
+     //int i = 0;
+     //for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
+     //       App::DocumentObject* pActiveDoc = it->getObject();
+     //       std::vector<std::string> subnames = it->getSubNames();
+     //       Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+     //       for (auto name : subnames) {
+     //           TopoDS_Shape face = feat->Shape.getShape().getSubShape(name.c_str());
+     //           for (TopExp_Explorer explorer(face, TopAbs_EDGE); explorer.More(); explorer.Next()) {
+     //               TopoDS_Edge edge = TopoDS::Edge(explorer.Current());
+     //               Part::Feature* edgeFeature = new Part::Feature();
+     //               //// 将合并后的形状赋值给新对象的Shape属性
+     //               edgeFeature->Shape.setValue(edge);
+     //               // 将新对象添加到文档中，并命名为"FusedFace"
+     //               std::string name = "edge" + std::to_string(i++);
+     //               const char* edgename = name.c_str();
+     //               doc->addObject(edgeFeature, edgename);
+
+     //           }
+     //       }
+     //    
+     //}
+     // 获取选择对象列表
+     std::vector<Gui::SelectionObject> sel = Gui::Selection().getSelectionEx();
+
+     // 遍历选择对象列表
+      App::Document* doc = App::GetApplication().getActiveDocument();
+     for (auto& obj : sel) {
+         // 获取对象的类型
+         std::string type = obj.getTypeName();
+         // 如果对象是Part::Feature类型
+         if (type == "Part::Feature") {
+             // 获取对象的形状
+             Part::Feature* feat = static_cast<Part::Feature*>(obj.getObject());
+             TopoDS_Shape shape = feat->Shape.getValue();
+             // 获取形状的所有面
+             TopTools_IndexedMapOfShape faces;
+             TopExp::MapShapes(shape, TopAbs_FACE, faces);
+             // 遍历所有面
+             for (int i = 1; i <= faces.Extent(); i++) {
+                 // 获取当前面
+                 TopoDS_Face face = TopoDS::Face(faces.FindKey(i));
+                 // 判断当前面是否被选中
+                 bool selected = false;
+                 for (auto& sub : obj.getSubNames()) {
+                     if (sub == std::string("Face") + std::to_string(i)) {
+                         selected = true;
+                         break;
+                     }
+                 }
+                 // 如果当前面被选中
+                 if (selected) {
+                     // 获取当前面的外部线框
+                     //TopoDS_Wire wire = face.wire();
+                     // 获取线框的所有边
+                     TopTools_IndexedMapOfShape edges;
+                     TopExp::MapShapes(face, TopAbs_EDGE, edges);
+                     // 遍历所有边
+                     for (int j = 1; j <= edges.Extent(); j++) {
+                         // 获取当前边
+                         TopoDS_Edge edge = TopoDS::Edge(edges.FindKey(j));
+                         Part::Feature* edgeFeature = new Part::Feature();
+                        //// 将合并后的形状赋值给新对象的Shape属性
+                        edgeFeature->Shape.setValue(edge);
+                        // 将新对象添加到文档中，并命名为"FusedFace"
+                        std::string name = "edge" + std::to_string(i);
+                        const char* edgename = name.c_str();
+                        doc->addObject(edgeFeature, edgename);
+                         
+                     }
+                 }
+             }
+         }
+     }
+
+ }
+
+ void CADSimplifier::SimplifierTool::getFacesOfSelectedEdge() {//获取包含选定边的面并添加到freecad中
+     // 获取选择对象列表
+     std::vector<Gui::SelectionObject> sel = Gui::Selection().getSelectionEx();
+
+     // 遍历选择对象列表
+     App::Document* doc = App::GetApplication().getActiveDocument();
+     for (auto& obj : sel) {
+         // 获取对象的类型
+         std::string type = obj.getTypeName();
+         for (auto& sub : obj.getSubNames()) {
+             Base::Console().Message(sub.c_str());
+             Base::Console().Message("\n");
+         }
+         // 如果对象是Part::Feature类型
+         if (1) {
+             // 获取对象的形状
+             Part::Feature* feat = static_cast<Part::Feature*>(obj.getObject());
+             TopoDS_Shape shape = feat->Shape.getValue();
+             // 获取形状的所有边
+             TopTools_IndexedMapOfShape edges;
+             TopExp::MapShapes(shape, TopAbs_EDGE, edges);
+             // 遍历所有边
+             for (int i = 1; i <= edges.Extent(); i++) {
+                 // 获取当前边
+                 TopoDS_Edge edge = TopoDS::Edge(edges.FindKey(i));
+                 // 判断当前边是否被选中
+                 bool selected = false;
+                 for (auto& sub : obj.getSubNames()) {
+                     std::string name = std::string("Edge") + std::to_string(i);
+                     if (sub == name) {
+                         selected = true;
+                         break;
+                     }
+                 }
+                 
+                 // 如果当前边被选中
+                 TopTools_IndexedMapOfShape faces;
+                 if (selected) {
+                     TopExp::MapShapes(shape, TopAbs_FACE, faces);
+                     for (int k = 1; k <= faces.Extent(); k++)
+                     {
+                         int j = 0;
+                         TopoDS_Face aFace = TopoDS::Face(faces.FindKey(k));
+
+                         // 获取面上的所有边，并检查是否包含目标边
+                         for (TopExp_Explorer anEdgeExp(aFace, TopAbs_EDGE); anEdgeExp.More(); anEdgeExp.Next())
+                         {
+                             TopoDS_Edge aFaceEdge = TopoDS::Edge(anEdgeExp.Current());
+                             if (aFaceEdge.IsSame(edge))
+                             {
+                                 Part::Feature* edgeFeature = new Part::Feature();
+                                 //// 将合并后的形状赋值给新对象的Shape属性
+                                 edgeFeature->Shape.setValue(aFace);
+                                 // 将新对象添加到文档中，并命名为"FusedFace"
+                                 std::string name = "face" + std::to_string(j++);
+                                 const char* facename = name.c_str();
+                                 doc->addObject(edgeFeature, facename);
+                                 break;
+                             }
+                         }
+                     }
+                     
+                 }
+             }
+         }
+     }
+
+ }
+
+
+
+
 
  
 

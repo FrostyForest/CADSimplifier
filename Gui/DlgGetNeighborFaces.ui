@@ -193,7 +193,7 @@
            <item>
             <widget class="QLabel" name="lableRadiusRange">
              <property name="text">
-              <string>最小半径～最大半径：</string>
+              <string>最小半径～最大半径(单位:mm)</string>
              </property>
             </widget>
            </item>
@@ -207,8 +207,7 @@
              </property>
              <property name="font">
               <font>
-               <pointsize>9</pointsize>
-               <bold>false</bold>
+               <pointsize>10</pointsize>
               </font>
              </property>
             </widget>
@@ -242,7 +241,7 @@
              </property>
              <property name="font">
               <font>
-               <pointsize>9</pointsize>
+               <pointsize>10</pointsize>
                <bold>false</bold>
               </font>
              </property>

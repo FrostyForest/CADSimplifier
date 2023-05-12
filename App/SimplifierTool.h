@@ -16,6 +16,7 @@
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Solid.hxx>
 #include<TopTools_IndexedMapOfShape.hxx>
+#include <BRep_Tool.hxx>
 #include "TopExp_Explorer.hxx"
 
 
@@ -67,6 +68,10 @@ public:
     void
     getAllFacesOfASolidOfDocument(TopTools_IndexedMapOfShape& allFace,const QByteArray& featureName,const App::DocumentObject* obj = nullptr);
     void getSelectedFaces(std::vector<TopoDS_Shape>& selectedFaces);
+    char* checkFaceType(const TopoDS_Face& OCCface, double& radius,char* &str ...);
+    void findCommonEdge(const TopoDS_Face& F1, const TopoDS_Face& F2, TopTools_ListOfShape& Edge_list);
+    void getEdgesOfSelectedFace();
+    void getFacesOfSelectedEdge();
 protected: 
 
     //help
