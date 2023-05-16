@@ -424,30 +424,30 @@ bool CmdCADSimplifierRemoveFillets::isActive()
 
 
 //===========================================================================
-//  CADSimplifier_GetNeighborFaces
+//  CADSimplifier_DeleteFillet
 //===========================================================================
-DEF_STD_CMD_A(CmdCADSimplifier_GetNeighborFaces)
-CmdCADSimplifier_GetNeighborFaces::CmdCADSimplifier_GetNeighborFaces() 
-    : Command("CADSimplifier_GetNeighborFaces")
+DEF_STD_CMD_A(CmdCADSimplifier_DeleteFillet)
+CmdCADSimplifier_DeleteFillet::CmdCADSimplifier_DeleteFillet()
+    : Command("CADSimplifier_DeleteFillet")
 {
     sAppModule = "CADSimplifier";
     sGroup = QT_TR_NOOP("CADSimplifier");
-    sMenuText = QT_TR_NOOP("获取邻接面");
-    sToolTipText = QT_TR_NOOP("自动获取所有的邻接面");
-    sWhatsThis = "CADSimplifier_GetNeighborFaces";
+    sMenuText = QT_TR_NOOP("删除圆角面");
+    sToolTipText = QT_TR_NOOP("自动获删除圆角面");
+    sWhatsThis = "CADSimplifier_DeleteFillet";
     sStatusTip = sToolTipText;
-    sPixmap = "CADSimplifier_GetNeighborFaces";   
+    sPixmap = "CADSimplifierWorkbench";
     sAccel = "SHIFT+G"; 
 }
 
-void CmdCADSimplifier_GetNeighborFaces::activated(int iMsg)
+void CmdCADSimplifier_DeleteFillet::activated(int iMsg)
 {
     Q_UNUSED(iMsg);
     Gui::Control().showDialog(new CADSimplifierGui::TaskGetNeighborFaces(nullptr));
 
 }
 
-bool CmdCADSimplifier_GetNeighborFaces::isActive()
+bool CmdCADSimplifier_DeleteFillet::isActive()
 { 
     Base::Type partid = Base::Type::fromName("Part::Feature");
     std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
@@ -558,6 +558,6 @@ void CreateCADSimplifierCommands(void)
     rcCmdMgr.addCommand(new CmdCADSimplifierTest());
     rcCmdMgr.addCommand(new CmdCADSimplifierRemoveFillets());
     rcCmdMgr.addCommand(new CmdCADSimplifier_AutoRemoveFillets());
-    rcCmdMgr.addCommand(new CmdCADSimplifier_GetNeighborFaces());
+    rcCmdMgr.addCommand(new CmdCADSimplifier_DeleteFillet());
     rcCmdMgr.addCommand(new CmdCADSimplifier_ShapeHealing());
 }

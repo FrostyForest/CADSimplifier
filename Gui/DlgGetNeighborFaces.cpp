@@ -225,6 +225,10 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
     d->connectApplicationDeletedDocument = App::GetApplication().signalDeleteDocument.connect(
         boost::bind(&DlgGetNeighborFaces::onDeleteDocument, this, bp::_1));
    
+    //connect(ui->configureRadiusButton, SIGNAL(&QPushButton::clicked), this, SLOT(on_selectFitButton_clicked()));
+    connect(ui->configureRadiusButton, SIGNAL(clicked()), this, SLOT(on_selectFitButton_clicked()));
+    connect(ui->deleteButton, SIGNAL(clicked()), this, SLOT(on_selectFitButton_clicked()));
+
     // set tree view with three columns
     QStandardItemModel* model = new FilletRadiusModel(this);
     connect(model, SIGNAL(toggleCheckState(const QModelIndex&)), this,SLOT(toggleCheckState(const QModelIndex&)));
@@ -244,7 +248,7 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
         model->setHeaderData(2, Qt::Horizontal, tr("End radius"), Qt::DisplayRole);
     }
     ui->treeView->setRootIsDecorated(false);
-    ui->treeView->setItemDelegate(new CADSimplifierGui::FilletRadiusDelegate(this));
+    ui->treeView->setItemDelegate(new CADSimplifierGui::FilletRadiusDelegate(this));//设置圆角相关数据
     ui->treeView->setModel(model);
 
     QHeaderView* header = ui->treeView->header();
@@ -878,12 +882,20 @@ void DlgGetNeighborFaces::on_selectNoneButton_clicked()
     }   
 }
 
+void DlgGetNeighborFaces::on_deleteButton_clicked() {
+
+    Gui::Command::doCommand(Gui::Command::Gui, "Gui.runCommand('CADSimplifier_RemoveFillets',0)");
+    return;
+}
 
 
 TaskGetNeighborFaces::TaskGetNeighborFaces(Part::FilletBase* fillet)
 {   
+
+
+
     widget = new DlgGetNeighborFaces(DlgGetNeighborFaces::ShapeType::Faces, fillet);
-    taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("CADSimplifier_GetNeighborFaces"),
+    taskbox = new Gui::TaskView::TaskBox(Gui::BitmapFactory().pixmap("CADSimplifierWorkbench"),
                                          widget->windowTitle(), true, nullptr);
     taskbox->groupLayout()->addWidget(widget);
     Content.push_back(taskbox);

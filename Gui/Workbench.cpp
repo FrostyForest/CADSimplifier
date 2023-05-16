@@ -52,7 +52,7 @@ Gui::MenuItem* Workbench::setupMenuBar() const
     test->setCommand("CADSimplifier");
     *test << "CADSimplifier_Test" 
           << "CADSimplifier_ShapeHealing" 
-          << "CADSimplifier_GetNeighborFaces"
+          << "CADSimplifier_DeleteFillet"
           << "CADSimplifier_RemoveFillets"
           << "CADSimplifier_AutoRemoveFillets" ;  
     return root;
@@ -65,7 +65,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
     test->setCommand( "CADSimplifier Tools" );
     *test << "CADSimplifier_Test" 
           << "CADSimplifier_ShapeHealing" 
-          << "CADSimplifier_GetNeighborFaces" 
+          << "CADSimplifier_DeleteFillet" 
           << "CADSimplifier_RemoveFillets"
           << "CADSimplifier_AutoRemoveFillets";
     return root;

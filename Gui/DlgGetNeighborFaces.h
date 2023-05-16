@@ -12,6 +12,8 @@
 #include <QItemSelection>
 #include <QStandardItemModel>
 
+
+
 namespace Base
 {
 class Quantity;
@@ -64,7 +66,7 @@ public:
         Faces,      
     };
 
-    DlgGetNeighborFaces(ShapeType type,Part::FilletBase*,QWidget* parent = nullptr,Qt::WindowFlags fl = Qt::WindowFlags());
+    DlgGetNeighborFaces(ShapeType type, Part::FilletBase*, QWidget* parent = nullptr, Qt::WindowFlags fl = Qt::WindowFlags());
     ~DlgGetNeighborFaces() override;
     bool accept();
 protected:
@@ -92,11 +94,15 @@ private Q_SLOTS:
     void on_filletEndRadius_valueChanged(const Base::Quantity&);
     void toggleCheckState(const QModelIndex&);
     void onHighlightFaces();
+    void on_deleteButton_clicked();
+
 private:
     std::unique_ptr<Ui_DlgGetNeighborFaces> ui;
+
     class Private;
     std::unique_ptr<Private> d;//pimpl
     std::unique_ptr<CADSimplifier::SimplifierTool> tool;
+
 };
 
 class GetNeighborFacesDialog: public QDialog
