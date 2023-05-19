@@ -72,6 +72,7 @@ public:
     void findCommonEdge(const TopoDS_Face& F1, const TopoDS_Face& F2, TopTools_ListOfShape& Edge_list);
     void getEdgesOfSelectedFace();
     void getFacesOfSelectedEdge();
+    char* checkShapeType(const TopoDS_Shape& shape, char*& str ...);
 protected: 
 
     //help

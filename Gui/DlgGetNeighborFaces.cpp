@@ -227,7 +227,7 @@ DlgGetNeighborFaces::DlgGetNeighborFaces(ShapeType type, Part::FilletBase* fille
    
     //connect(ui->configureRadiusButton, SIGNAL(&QPushButton::clicked), this, SLOT(on_selectFitButton_clicked()));
     connect(ui->configureRadiusButton, SIGNAL(clicked()), this, SLOT(on_selectFitButton_clicked()));
-    connect(ui->deleteButton, SIGNAL(clicked()), this, SLOT(on_selectFitButton_clicked()));
+    connect(ui->deleteButton, SIGNAL(clicked()), this, SLOT(on_deleteButton_clicked()));
 
     // set tree view with three columns
     QStandardItemModel* model = new FilletRadiusModel(this);

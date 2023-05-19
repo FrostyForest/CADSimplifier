@@ -60,6 +60,10 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepFill_Filling.hxx>
 #include <BRepOffsetAPI_ThruSections.hxx>
+#include <TopoDS_Builder.hxx>
+#include <BRep_Builder.hxx>
+#include <BRepAlgoAPI_Cut.hxx>
+#include <BRepAlgoAPI_Defeaturing.hxx>
 #include"DlgGetNeighborFaces.h"
 
 #include <locale>
@@ -103,12 +107,19 @@ void CmdCADSimplifierTest::activated(int iMsg)
 
     std::vector<TopoDS_Shape> selected_faces;
     TopTools_ListOfShape twoFace_edges_list;//两个面的所有edge的list
+    TopoDS_Compound comp;//新的集合
+    BRep_Builder aBuilder;
+    aBuilder.MakeCompound(comp);
     for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
         try {
+            TopTools_ListOfShape deleteFacesList;
             App::DocumentObject* pActiveDoc = it->getObject();
             Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
-
             TopoDS_Shape sh = feat->Shape.getShape().getShape();
+            
+            char* shapeType;
+            tool.checkShapeType(sh,shapeType);
+            Base::Console().Message("选定的shape类型为：%s\n", shapeType);
 
             std::vector<TopoDS_Shape> Faces;
             std::vector<std::string> subnames = it->getSubNames();
@@ -116,7 +127,8 @@ void CmdCADSimplifierTest::activated(int iMsg)
             int i = 0;
             for (auto name : subnames) {
                 Base::Console().Message("%s\n", name);
-                TopoDS_Shape face= feat->Shape.getShape().getSubShape(name.c_str());
+                TopoDS_Shape& face= feat->Shape.getShape().getSubShape(name.c_str());
+
                 bool isFace = (face.ShapeType() == TopAbs_FACE);
                 char* type;
                 double radius = 0;
@@ -127,24 +139,16 @@ void CmdCADSimplifierTest::activated(int iMsg)
                     }
                     selected_faces.emplace_back(face);
                     TopoDS_Face myFace = TopoDS::Face(face);
+                    
+                    deleteFacesList.Append(myFace);
                     tool.checkFaceType(myFace, radius,type);
                 }
                 Base::Console().Message("面%d是否为面 ：%d\n", i++,isFace);
                 Base::Console().Message("面为%s,半径为：%.2f\n",type,radius);
 
             }
-            //for (std::vector<std::string>::iterator sub = subnames.begin(); sub != subnames.end();
-            //     ++sub) {
-            //    TopoDS_Shape ref = feat->Shape.getShape().getSubShape(sub->c_str());
-            //    tool.FacesToMerge.Append(ref);
-            //}
-            //if (tool.Preform()) {
-            //    TopoDS_Shape nsh = tool.FaceMerged;
-            //    auto uiDoc = Gui::Application::Instance->activeDocument();
-            //    Part::Feature* pNewFeat = (Part::Feature*)uiDoc->getDocument()->addObject(
-            //        "Part::Feature", "MergedFace");
-            //    pNewFeat->Shape.setValue(nsh);
-            //}
+
+            
         }
         catch (const Base::Exception& e) {
             Base::Console().Warning("%s: %s\n", it->getFeatName(), e.what());
@@ -154,6 +158,25 @@ void CmdCADSimplifierTest::activated(int iMsg)
     if (selected_faces.size() == 2) {
         TopoDS_Face topoFace1 = TopoDS::Face(selected_faces[0]);
         TopoDS_Face topoFace2 = TopoDS::Face(selected_faces[1]);
+
+        for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it)
+        {
+            App::DocumentObject* pActiveDoc = it->getObject();
+            Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+            TopoDS_Shape sh = feat->Shape.getShape().getShape();
+            for (TopExp_Explorer anExp(sh, TopAbs_FACE); anExp.More(); anExp.Next())
+            {
+                const TopoDS_Shape& aShape = anExp.Current();
+                if (aShape.IsEqual(selected_faces[0]) || aShape.IsEqual(selected_faces[1]))
+                {
+                    continue;
+                }
+                else {
+                    aBuilder.Add(comp, aShape);
+                }
+            }
+        }
+
         for (auto topoface : selected_faces) {
             TopExp_Explorer explorer(topoface, TopAbs_EDGE);
             std::vector<TopoDS_Edge> edge_list;
@@ -263,6 +286,15 @@ void CmdCADSimplifierTest::activated(int iMsg)
                 doc->addObject(fusedFeature, "FusedFace");
                 doc->addObject(fusedFeature2, "MergeFace");
                 doc->addObject(fusedFeature3, "FillFace");
+
+                aBuilder.Add(comp, fillFace);//在新建的compound添加新面
+                auto uiDoc = Gui::Application::Instance->activeDocument();
+                Part::Feature* pNewFeat = (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "newCompound");
+                pNewFeat->Shape.setValue(comp);
+                doc->addObject(pNewFeat, "newCompound");
+
+                //defeaturing
+
             }
         }
     }
@@ -279,7 +311,7 @@ void CmdCADSimplifierTest::activated(int iMsg)
     DBRep::Set(theArgv[1], aResult);*/
     commitCommand();
     updateActive();
-
+    return;
 }
 
 //===========================================================================
@@ -549,6 +581,82 @@ bool CmdCADSimplifier_AutoRemoveFillets::isActive() {
 #pragma endregion
 
 
+DEF_STD_CMD(CmdCADSimplifier_Defeature)
+CmdCADSimplifier_Defeature::CmdCADSimplifier_Defeature()
+    : Command("CADSimplifier_Defeature")
+{
+    sAppModule = "CADSimplifier";
+    sGroup = QT_TR_NOOP("CADSimplifier");
+    sMenuText = QT_TR_NOOP("特征抑制");
+    sToolTipText = QT_TR_NOOP("自动抑制选择的特征");
+    sWhatsThis = "CADSimplifier_Defeature";
+    sStatusTip = sToolTipText;
+    sPixmap = "CADSimplifierWorkbench";
+    sAccel = "SHIFT+D";
+}
+
+void CmdCADSimplifier_Defeature::activated(int iMsg) {
+    SimplifierTool tool;
+    Q_UNUSED(iMsg);
+    Gui::WaitCursor wc;
+
+    Base::Type partid = Base::Type::fromName("Part::Feature");
+    std::vector<Gui::SelectionObject> objs = Gui::Selection().getSelectionEx(nullptr, partid);
+    Base::Console().Message("选定obj数量：%d\n", objs.size());
+    openCommand(QT_TRANSLATE_NOOP("Command", "Test"));
+    TopoDS_Compound comp;//新的集合
+    BRep_Builder aBuilder;
+    aBuilder.MakeCompound(comp);
+    TopTools_ListOfShape defeatureFaces;
+    for (std::vector<Gui::SelectionObject>::iterator it = objs.begin(); it != objs.end(); ++it) {
+        App::DocumentObject* pActiveDoc = it->getObject();
+        Part::Feature* feat = static_cast<Part::Feature*>(pActiveDoc);
+        TopoDS_Shape sh = feat->Shape.getShape().getShape();
+        aBuilder.Add(comp,sh);
+
+        std::vector<std::string> subnames = it->getSubNames();
+        int i = 0;
+        for (auto name : subnames) {
+            Base::Console().Message("%s\n", name);
+            TopoDS_Shape& face = feat->Shape.getShape().getSubShape(name.c_str());
+
+            bool isFace = (face.ShapeType() == TopAbs_FACE);
+            char* type;
+            double radius = 0;
+            if (isFace == 1) {
+                TopoDS_Face myFace = TopoDS::Face(face);
+                defeatureFaces.Append(myFace);
+                tool.checkFaceType(myFace, radius, type);
+            }
+            Base::Console().Message("面%d是否为面 ：%d\n", i++, isFace);
+            Base::Console().Message("面为%s,半径为：%.2f\n", type, radius);
+
+        }
+    }
+    BRepAlgoAPI_Defeaturing aDF;             // De-Featuring algorithm
+    aDF.SetShape(comp);                    // Set the shape
+    aDF.AddFacesToRemove(defeatureFaces);            // Add faces to remove
+    aDF.SetRunParallel(1);        // Define the processing mode (parallel or single)
+    aDF.SetToFillHistory(0);   // Define whether to track the shapes modifications
+    aDF.Build();                             // Perform the operation
+    if (aDF.IsDone())                       // Check for the errors
+    {
+        const TopoDS_Shape& aResult = aDF.Shape(); // Result shape
+        Part::Feature* newShapeF = new Part::Feature();
+        newShapeF->Shape.setValue(aResult);
+        App::Document* doc = App::GetApplication().getActiveDocument();
+        doc->addObject(newShapeF, "defeaturedShape");
+        
+    }
+    else {
+        
+    }
+    commitCommand();
+    updateActive();
+    return;
+}
+
+
 //===========================================================================
 // Application 中加入命令
 //===========================================================================
@@ -560,4 +668,5 @@ void CreateCADSimplifierCommands(void)
     rcCmdMgr.addCommand(new CmdCADSimplifier_AutoRemoveFillets());
     rcCmdMgr.addCommand(new CmdCADSimplifier_DeleteFillet());
     rcCmdMgr.addCommand(new CmdCADSimplifier_ShapeHealing());
+    rcCmdMgr.addCommand(new CmdCADSimplifier_Defeature());
 }

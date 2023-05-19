@@ -54,7 +54,8 @@ Gui::MenuItem* Workbench::setupMenuBar() const
           << "CADSimplifier_ShapeHealing" 
           << "CADSimplifier_DeleteFillet"
           << "CADSimplifier_RemoveFillets"
-          << "CADSimplifier_AutoRemoveFillets" ;  
+          << "CADSimplifier_AutoRemoveFillets"  
+          << "CADSimplifier_Defeature";
     return root;
 }
 
@@ -67,6 +68,7 @@ Gui::ToolBarItem* Workbench::setupToolBars() const
           << "CADSimplifier_ShapeHealing" 
           << "CADSimplifier_DeleteFillet" 
           << "CADSimplifier_RemoveFillets"
-          << "CADSimplifier_AutoRemoveFillets";
+          << "CADSimplifier_AutoRemoveFillets"
+          << "CADSimplifier_Defeature";
     return root;
 }

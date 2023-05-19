@@ -456,7 +456,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          str = ("环形曲面");
      }
      else if (S->IsKind(STANDARD_TYPE(Geom_BSplineSurface))) {//样条曲面
-         radius = samplingGetRadiusOfFreeSurface(OCCface, 4);//3*3 9点采样
+         radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);//3*3 9点采样
          str = ("样条曲面");
      }
      else if (S->IsKind(STANDARD_TYPE(Geom_BezierSurface))) {//贝塞尔曲面
@@ -465,7 +465,7 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
      }
      else if (S->IsKind(STANDARD_TYPE(Geom_OffsetSurface))) {
          radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2 + 1);
-         str = ("球面");
+         str = ("偏移面");
      }
      else if (S->IsKind(STANDARD_TYPE(Geom_SurfaceOfRevolution))) {
          radius = samplingGetRadiusOfFreeSurface(OCCface, 4);
@@ -689,6 +689,55 @@ void SimplifierTool::Restore(Base::XMLReader& reader)
          }
      }
 
+ }
+
+ char* CADSimplifier::SimplifierTool::checkShapeType(const TopoDS_Shape& shape, char*& str ...)
+ {
+     TopAbs_ShapeEnum type = shape.ShapeType();
+     if (type == TopAbs_COMPOUND) {
+         str = ("type == TopAbs_COMPOUND");
+     }
+     else if (type == TopAbs_COMPSOLID) {
+
+         str = ("type == TopAbs_COMPSOLID");
+     }
+     else if (type == TopAbs_SOLID) {
+         str = ("type == TopAbs_SOLID");
+     }
+     else if (type == TopAbs_SHELL) {
+         str = ("type == TopAbs_SHELL");
+     }
+     else if (type == TopAbs_FACE) {//样条曲面
+         str = ("type == TopAbs_FACE");
+     }
+     else if (type == TopAbs_WIRE) {//贝塞尔曲面
+         str = ("type == TopAbs_WIRE");
+     }
+     else if (type == TopAbs_EDGE) {
+         str = ("type == TopAbs_EDGE");
+     }
+     else if (type == TopAbs_VERTEX) {
+         str = ("type == TopAbs_VERTEX");
+     }
+     
+     else {
+         //radius = samplingGetRadiusOfFreeSurface(OCCface, 1e2+1);
+         //if (radius < 0) radius = Abs(radius);
+         //return true;
+#ifdef FC_DEBUG
+         std::string err = "Unhandled surface type ";
+         err += S->DynamicType()->Name();
+         QMessageBox::about(nullptr, QObject::tr("Error Tip"), QString::fromStdString(err));
+         //auto desc = S->get_type_descriptor();         
+         //std::ostringstream info;
+         //desc->Print(info);  
+         //std::string sp = info.str();
+         //QMessageBox::about(nullptr, QString::fromLatin1("Error Info"),QString::fromStdString(sp));
+#endif  
+         return "error";
+     }
+
+     return str;
  }
 
 
