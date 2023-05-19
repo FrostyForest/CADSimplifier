@@ -288,11 +288,9 @@ void CmdCADSimplifierTest::activated(int iMsg)
                 doc->addObject(fusedFeature3, "FillFace");
 
                 aBuilder.Add(comp, fillFace);//在新建的compound添加新面
-                auto uiDoc = Gui::Application::Instance->activeDocument();
-                Part::Feature* pNewFeat = (Part::Feature*)uiDoc->getDocument()->addObject("Part::Feature", "newCompound");
-                pNewFeat->Shape.setValue(comp);
-                doc->addObject(pNewFeat, "newCompound");
-
+                Part::Feature* fusedFeature4 = new Part::Feature();
+                fusedFeature4->Shape.setValue(comp);
+                doc->addObject(fusedFeature4, "newCompound");
                 //defeaturing
 
             }
@@ -311,6 +309,7 @@ void CmdCADSimplifierTest::activated(int iMsg)
     DBRep::Set(theArgv[1], aResult);*/
     commitCommand();
     updateActive();
+
     return;
 }
 
